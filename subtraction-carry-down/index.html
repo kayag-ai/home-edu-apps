@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaya's Math Drill</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f0f4f8; }
+        #status { font-size: 1.5rem; margin-bottom: 20px; color: #555; }
+        #question { font-size: 5rem; font-weight: bold; color: #2c3e50; }
+        #answer-display { font-size: 3rem; margin-top: 20px; color: #e74c3c; min-height: 4rem; }
+        button { padding: 15px 30px; font-size: 1.2rem; cursor: pointer; background: #3498db; color: white; border: none; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div id="status">ボタンを押して開始</div>
+    <div id="question">?-?</div>
+    <div id="answer-display"></div>
+    <button id="start-btn">練習をはじめる</button>
+
+    <script>
+        const questionEl = document.getElementById('question');
+        const statusEl = document.getElementById('status');
+        const answerEl = document.getElementById('answer-display');
+        const startBtn = document.getElementById('start-btn');
+
+        let currentAnswer = 0;
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'ja-JP';
+        recognition.interimResults = false;
+
+        // 繰り下がりのある問題のみ生成 (11-18)
+        function generateQuestion() {
+            const problems = [];
+            for (let i = 11; i <= 18; i++) {
+                for (let j = i - 9; j <= 9; j++) {
+                    if (j > 0 && (i % 10) < j) problems.push({q: `${i} - ${j}`, a: i - j});
+                }
+            }
+            return problems[Math.floor(Math.random() * problems.length)];
+        }
+
+        function askQuestion() {
+            const problem = generateQuestion();
+            currentAnswer = problem.a;
+            questionEl.textContent = problem.q;
+            answerEl.textContent = "";
+            
+            const uttr = new SpeechSynthesisUtterance(problem.q.replace('-', 'ひく') + 'は？');
+            uttr.lang = 'ja-JP';
+            uttr.onend = () => {
+                statusEl.textContent = "きいています...";
+                recognition.start();
+            };
+            window.speechSynthesis.speak(uttr);
+        }
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            answerEl.textContent = transcript;
+            
+            // 数字の揺らぎ吸収（全角・漢数字など）
+            const normalized = transcript.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+            
+            if (normalized.includes(currentAnswer.toString())) {
+                statusEl.textContent = "せい解！";
+                const correctUttr = new SpeechSynthesisUtterance("正解！");
+                correctUttr.onend = () => setTimeout(askQuestion, 500);
+                window.speechSynthesis.speak(correctUttr);
+            } else {
+                statusEl.textContent = "おしい！もういちど";
+                const wrongUttr = new SpeechSynthesisUtterance("おしい、もう一回");
+                wrongUttr.onend = () => recognition.start();
+                window.speechSynthesis.speak(wrongUttr);
+            }
+        };
+
+        recognition.onerror = () => {
+            statusEl.textContent = "聞き取れませんでした";
+            setTimeout(() => recognition.start(), 1000);
+        };
+
+        startBtn.onclick = () => {
+            startBtn.style.display = 'none';
+            askQuestion();
+        };
+    </script>
+</body>
+</html>
