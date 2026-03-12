@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABC Emoji Attack - Level Up</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #fdf2f8; touch-action: manipulation; }
+        #status-bar { width: 90%; display: flex; justify-content: space-between; font-size: 1.1rem; color: #666; margin-bottom: 5px; max-width: 500px; }
+        #question-container { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; }
+        #char-display { font-size: 7rem; font-weight: bold; color: #be185d; line-height: 1; min-height: 1.1em; }
+        #emoji-display { font-size: 5rem; margin: 10px 0; }
+        #word-display { font-size: 1.5rem; color: #be185d; font-weight: bold; min-height: 1.6em; }
+
+        .keypad { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; width: 95%; max-width: 600px; }
+        .key { 
+            padding: 12px 5px; font-size: 1.5rem; font-weight: bold; cursor: pointer; 
+            background: white; color: #be185d; border: 2px solid #be185d; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .key:active { background: #be185d; color: white; }
+        
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fdf2f8; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; text-align: center; }
+        .mode-select { margin-bottom: 20px; font-size: 1.2rem; color: #be185d; font-weight: bold; }
+        #start-btn { padding: 20px 40px; font-size: 2rem; cursor: pointer; background: #db2777; color: white; border: none; border-radius: 15px; box-shadow: 0 4px #9d174d; }
+        #start-btn:active { box-shadow: none; transform: translateY(4px); }
+        #result-display { font-size: 1.8rem; color: #2c3e50; margin-bottom: 20px; line-height: 1.4; }
+        
+        /* チェックボックスを少し大きく */
+        input[type="checkbox"] { transform: scale(1.5); margin-right: 10px; vertical-align: middle; }
+    </style>
+</head>
+<body>
+    <div id="overlay">
+        <div id="result-display">🍎から🦓まで<br>ABCアタック！</div>
+        <div class="mode-select">
+            <label><input type="checkbox" id="emoji-mode-check">えもじだけモード（むずかしい）</label>
+        </div>
+        <button id="start-btn">スタート！</button>
+    </div>
+
+    <div id="status-bar">
+        <div id="timerDisplay">0.0s</div>
+        <div id="progressDisplay">のこり: 26</div>
+    </div>
+
+    <div id="question-container">
+        <div id="char-display">A</div>
+        <div id="emoji-display">🍎</div>
+        <div id="word-display">Apple</div>
+    </div>
+    
+    <div class="keypad" id="keypad"></div>
+
+    <script>
+        const ABC_DATA = [
+            {l:"A", e:"🍎", w:"Apple"}, {l:"B", e:"🍌", w:"Banana"}, {l:"C", e:"🐱", w:"Cat"},
+            {l:"D", e:"🐶", w:"Dog"}, {l:"E", e:"🥚", w:"Egg"}, {l:"F", e:"🐟", w:"Fish"},
+            {l:"G", e:"🍇", w:"Grape"}, {l:"H", e:"🏠", w:"House"}, {l:"I", e:"🍦", w:"Ice cream"},
+            {l:"J", e:"🚀", w:"Jet"}, {l:"K", e:"🔑", w:"Key"}, {l:"L", e:"🦁", w:"Lion"},
+            {l:"M", e:"🌙", w:"Moon"}, {l:"N", e:"📘", w:"Notebook"}, {l:"O", e:"🐙", w:"Octopus"},
+            {l:"P", e:"🐼", w:"Panda"}, {l:"Q", e:"👑", w:"Queen"}, {l:"R", e:"🐰", w:"Rabbit"},
+            {l:"S", e:"☀️", w:"Sun"}, {l:"T", e:"🐯", w:"Tiger"}, {l:"U", e:"☂️", w:"Umbrella"},
+            {l:"V", e:"🎻", w:"Violin"}, {l:"W", e:"🍉", w:"Watermelon"}, {l:"X", e:"🩻", w:"X-ray"},
+            {l:"Y", e:"🛥️", w:"Yacht"}, {l:"Z", e:"🦓", w:"Zebra"}
+        ];
+
+        let problems = [];
+        let current = null;
+        let startTime = 0;
+        let timerInterval = null;
+        let isEmojiOnlyMode = false;
+
+        const charEl = document.getElementById('char-display');
+        const emojiEl = document.getElementById('emoji-display');
+        const wordEl = document.getElementById('word-display');
+        const timerEl = document.getElementById('timerDisplay');
+        const progressEl = document.getElementById('progressDisplay');
+        const overlay = document.getElementById('overlay');
+        const startBtn = document.getElementById('start-btn');
+        const emojiModeCheck = document.getElementById('emoji-mode-check');
+        const keypadEl = document.getElementById('keypad');
+
+        function initKeypad() {
+            keypadEl.innerHTML = '';
+            ABC_DATA.forEach(item => {
+                const key = document.createElement('div');
+                key.className = 'key';
+                key.textContent = item.l;
+                key.onclick = () => checkAnswer(item.l);
+                keypadEl.appendChild(key);
+            });
+        }
+
+        function initProblems() {
+            problems = [...ABC_DATA].sort(() => Math.random() - 0.5);
+        }
+
+        // ここが修正された askNext 関数
+        function askNext() {
+            if (problems.length === 0) {
+                finish();
+                return;
+            }
+            current = problems.pop();
+            
+            // 条件分岐：むずかしいモードなら文字を隠す
+            if (isEmojiOnlyMode) {
+                charEl.style.visibility = 'hidden';
+            } else {
+                charEl.style.visibility = 'visible';
+            }
+
+            charEl.textContent = current.l;
+            emojiEl.textContent = current.e;
+            wordEl.textContent = current.w;
+            progressEl.textContent = `のこり: ${problems.length + 1}`;
+
+            speak(`${current.l}, ${current.w}`, 'en-US');
+        }
+
+        function checkAnswer(letter) {
+            if (letter === current.l) {
+                speak("Great!", 'en-US');
+                askNext();
+            } else {
+                speak("ちがうよ", 'ja-JP');
+            }
+        }
+
+        function speak(text, lang) {
+            const uttr = new SpeechSynthesisUtterance(text);
+            uttr.lang = lang;
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(uttr);
+        }
+
+        function finish() {
+            clearInterval(timerInterval);
+            const totalTime = ((performance.now() - startTime) / 1000).toFixed(1);
+            document.getElementById('result-display').innerHTML = `Clear! ✨<br>Time: ${totalTime}s`;
+            startBtn.textContent = "Try Again!";
+            overlay.style.display = 'flex';
+        }
+
+        startBtn.onclick = () => {
+            isEmojiOnlyMode = emojiModeCheck.checked; // モード判定
+            initProblems();
+            overlay.style.display = 'none';
+            startTime = performance.now();
+            timerInterval = setInterval(() => {
+                const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+                timerEl.textContent = `${elapsed}s`;
+            }, 100);
+            askNext();
+        };
+
+        initKeypad();
+    </script>
+</body>
+</html>
