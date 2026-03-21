@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kaya's Math Attack - Addition Matrix</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
     <style>
         body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #fff9f0; touch-action: manipulation; overflow: hidden; }
         #status-bar { width: 90%; display: flex; justify-content: space-between; font-size: 1.2rem; color: #555; margin-bottom: 10px; max-width: 400px; }
@@ -15,13 +16,13 @@
             display: flex; align-items: center; justify-content: center;
         }
         .key:active { background: #e67e22; color: white; }
-        
         #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 249, 240, 0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; text-align: center; padding: 20px; box-sizing: border-box; }
-        #start-btn, #retry-btn { padding: 20px 40px; font-size: 2rem; cursor: pointer; background: #f1c40f; color: white; border: none; border-radius: 15px; box-shadow: 0 4px #d4ac0d; margin-top: 20px; }
+        #start-btn { padding: 20px 40px; font-size: 2rem; cursor: pointer; background: #f1c40f; color: white; border: none; border-radius: 15px; box-shadow: 0 4px #d4ac0d; margin-top: 20px; }
         #start-btn:active { box-shadow: none; transform: translateY(4px); }
         #result-display { font-size: 1.5rem; color: #2c3e50; line-height: 1.6; }
         .character-icon { font-size: 5rem; margin-bottom: 10px; }
         .comment { font-weight: bold; color: #e67e22; margin-top: 10px; }
+        #debug-btn { position: fixed; bottom: 10px; right: 10px; padding: 8px 14px; font-size: 1.5rem; background: none; border: none; cursor: pointer; opacity: 0.4; }
     </style>
 </head>
 <body>
@@ -32,7 +33,7 @@
 
     <div id="status-bar">
         <div id="timerDisplay">タイム: 0.0秒</div>
-        <div id="progressDisplay">のこり: 36もん</div>
+        <div id="progressDisplay"></div>
     </div>
     <div id="question">?+?</div>
     
@@ -48,6 +49,8 @@
         <div class="key" onclick="handleInput(18)">18</div>
     </div>
 
+    <button id="debug-btn">🔧</button>
+
     <script>
         let problems = [];
         let currentProblem = null;
@@ -56,6 +59,7 @@
         let totalAttempts = 0;
         let firstTryCorrect = 0;
         let currentProblemAttempted = false;
+        let debugTimer = null;
 
         const questionEl = document.getElementById('question');
         const timerEl = document.getElementById('timerDisplay');
@@ -63,12 +67,19 @@
         const overlay = document.getElementById('overlay');
         const startBtn = document.getElementById('start-btn');
         const resultDisplay = document.getElementById('result-display');
+        const debugBtn = document.getElementById('debug-btn');
+
+        debugBtn.addEventListener('pointerdown', () => {
+            debugTimer = setTimeout(debugSkipToEnd, 3000);
+        });
+        debugBtn.addEventListener('pointerup', () => clearTimeout(debugTimer));
+        debugBtn.addEventListener('pointerleave', () => clearTimeout(debugTimer));
 
         function initProblems() {
             problems = [];
-            for (let i = 2; i <= 9; i++) {
-                for (let j = 2; j <= 9; j++) {
-                    if (i + j >= 10 && i + j <= 18) {
+            for (let i = 1; i <= 9; i++) {
+                for (let j = 1; j <= 9; j++) {
+                    if (i + j >= 11 && i + j <= 18) {
                         problems.push({q: `${i} + ${j}`, a: i + j});
                     }
                 }
@@ -77,51 +88,56 @@
             firstTryCorrect = 0;
         }
 
+        function speakThenDo(text, callback) {
+            const uttr = new SpeechSynthesisUtterance(text);
+            uttr.lang = 'ja-JP';
+            let done = false;
+            const proceed = () => { if (!done) { done = true; callback(); } };
+            uttr.onend = proceed;
+            setTimeout(proceed, 1500);
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(uttr);
+        }
+
         function askNextQuestion() {
             if (problems.length === 0) {
                 finishGame();
                 return;
             }
-            
             currentProblemAttempted = false;
-            progressEl.textContent = `のこり: ${problems.length}もん`;
             const index = Math.floor(Math.random() * problems.length);
             currentProblem = problems[index];
             problems.splice(index, 1);
-
             questionEl.textContent = currentProblem.q;
-            
-            const uttr = new SpeechSynthesisUtterance(currentProblem.q.replace('+', 'たす') + 'は？');
-            uttr.lang = 'ja-JP';
-            window.speechSynthesis.cancel();
-            window.speechSynthesis.speak(uttr);
+            speakThenDo(currentProblem.q.replace('+', 'たす') + 'は？', () => {});
         }
 
         function handleInput(num) {
             totalAttempts++;
             if (num === currentProblem.a) {
                 if (!currentProblemAttempted) firstTryCorrect++;
-                const correctUttr = new SpeechSynthesisUtterance("せいかい！");
-                window.speechSynthesis.speak(correctUttr);
-                askNextQuestion();
+                speakThenDo("せいかい！", askNextQuestion);
             } else {
                 currentProblemAttempted = true;
-                const wrongUttr = new SpeechSynthesisUtterance("ちがうよ");
-                window.speechSynthesis.speak(wrongUttr);
+                speakThenDo("ちがうよ", () => {});
             }
+        }
+
+        function debugSkipToEnd() {
+            problems = [];
+            firstTryCorrect = 30;
+            totalAttempts = 32;
+            finishGame();
         }
 
         function finishGame() {
             clearInterval(timerInterval);
             const totalTime = parseFloat(((performance.now() - startTime) / 1000).toFixed(1));
             const accuracy = (firstTryCorrect / 36) * 100;
-            
-            // マトリックス判定
-            const isFast = totalTime <= 144; // 36問 * 4秒
+            const isFast = totalTime <= 144;
             const isAccurate = accuracy >= 80;
 
             let char, name, comment, colors;
-
             if (isFast && isAccurate) {
                 char = "🦄"; name = "ユニコーン";
                 comment = "しんじられないスピードとせいかくさ！きみは すうじの まほうつかいだね！";
@@ -140,13 +156,7 @@
                 colors = ['#ffff00', '#ffa500', '#ffffff'];
             }
 
-            // 演出の実行
-            confetti({
-                particleCount: 150,
-                spread: 70,
-                origin: { y: 0.6 },
-                colors: colors
-            });
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors });
 
             resultDisplay.innerHTML = `
                 <div class="character-icon">${char}</div>
@@ -166,8 +176,7 @@
             overlay.style.display = 'none';
             startTime = performance.now();
             timerInterval = setInterval(() => {
-                const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
-                timerEl.textContent = `タイム: ${elapsed}秒`;
+                timerEl.textContent = `タイム: ${((performance.now() - startTime) / 1000).toFixed(1)}秒`;
             }, 100);
             askNextQuestion();
         };
