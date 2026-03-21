@@ -22,7 +22,23 @@
         #result-display { font-size: 1.5rem; color: #2c3e50; line-height: 1.6; }
         .character-icon { font-size: 5rem; margin-bottom: 10px; }
         .comment { font-weight: bold; color: #e67e22; margin-top: 10px; }
-        #debug-btn { position: fixed; bottom: 10px; right: 10px; padding: 8px 14px; font-size: 1.5rem; background: none; border: none; cursor: pointer; opacity: 0.4; }
+        
+        #debug-btn { 
+            position: fixed; 
+            bottom: 10px; 
+            right: 10px; 
+            padding: 8px 14px; 
+            font-size: 1.5rem; 
+            background: none; 
+            border: none; 
+            cursor: pointer; 
+            opacity: 0.4;
+            color: #42445A;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            z-index: 100;
+        }
     </style>
 </head>
 <body>
@@ -69,11 +85,18 @@
         const resultDisplay = document.getElementById('result-display');
         const debugBtn = document.getElementById('debug-btn');
 
-        debugBtn.addEventListener('pointerdown', () => {
-            debugTimer = setTimeout(debugSkipToEnd, 3000);
-        });
-        debugBtn.addEventListener('pointerup', () => clearTimeout(debugTimer));
-        debugBtn.addEventListener('pointerleave', () => clearTimeout(debugTimer));
+        // 長押し検知
+        const startPress = (e) => {
+            if (e.type === 'touchstart') e.preventDefault();
+            debugTimer = setTimeout(debugSkipWithBranch, 2000); // 2秒に短縮
+        };
+        const endPress = () => clearTimeout(debugTimer);
+
+        debugBtn.addEventListener('mousedown', startPress);
+        debugBtn.addEventListener('touchstart', startPress, {passive: false});
+        debugBtn.addEventListener('mouseup', endPress);
+        debugBtn.addEventListener('mouseleave', endPress);
+        debugBtn.addEventListener('touchend', endPress);
 
         function initProblems() {
             problems = [];
@@ -123,11 +146,38 @@
             }
         }
 
-        function debugSkipToEnd() {
+        // 修正箇所：入力値によってランクを分岐させる
+        function debugSkipWithBranch() {
+            const mode = prompt("デバッグランク選択:\n1:ユニコーン(速/正)\n2:フェニックス(遅/正)\n3:ウサギ(速/誤)\n4:ヒヨコ(遅/誤)");
+            if (!mode) return;
+
+            const now = performance.now();
             problems = [];
-            firstTryCorrect = 30;
-            totalAttempts = 32;
+            totalAttempts = 36;
+
+            switch(mode) {
+                case "1": // ユニコーン
+                    startTime = now - 10000; 
+                    firstTryCorrect = 36;
+                    break;
+                case "2": // フェニックス
+                    startTime = now - 300000;
+                    firstTryCorrect = 36;
+                    break;
+                case "3": // ウサギ
+                    startTime = now - 10000;
+                    firstTryCorrect = 20;
+                    break;
+                case "4": // ヒヨコ
+                    startTime = now - 300000;
+                    firstTryCorrect = 20;
+                    break;
+                default:
+                    return;
+            }
+
             finishGame();
+            overlay.style.display = 'flex';
         }
 
         function finishGame() {
