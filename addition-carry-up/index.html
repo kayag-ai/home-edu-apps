@@ -63,6 +63,7 @@
         let firstTryCorrect = 0;
         let currentProblemAttempted = false;
         let debugTimer = null;
+        let lastAnswer = null;
 
         const questionEl = document.getElementById('question');
         const timerEl = document.getElementById('timerDisplay');
@@ -95,6 +96,7 @@
             }
             totalAttempts = 0;
             firstTryCorrect = 0;
+            lastAnswer = null;
             // 初期表示を36にリセット
             progressEl.textContent = `のこり: ${problems.length}`;
         }
@@ -120,8 +122,12 @@
             // ★修正箇所: 1つ選ぶ前の現在のリスト数が「のこり」です
             progressEl.textContent = `のこり: ${problems.length}`;
             
-            const index = Math.floor(Math.random() * problems.length);
-            currentProblem = problems[index];
+            const candidates = problems.filter(p => p.a !== lastAnswer);
+            const pool = candidates.length > 0 ? candidates : problems;
+            const selected = pool[Math.floor(Math.random() * pool.length)];
+            const index = problems.indexOf(selected);
+            currentProblem = selected;
+            lastAnswer = selected.a;
             problems.splice(index, 1);
             questionEl.textContent = currentProblem.q;
             speakThenDo(currentProblem.q.replace('+', 'たす') + 'は？', () => {});

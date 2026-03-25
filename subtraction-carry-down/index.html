@@ -63,6 +63,7 @@
         let firstTryCorrect = 0;
         let currentProblemAttempted = false;
         let debugTimer = null;
+        let lastAnswer = null;
 
         const questionEl = document.getElementById('question');
         const timerEl = document.getElementById('timerDisplay');
@@ -94,6 +95,7 @@
             }
             totalAttempts = 0;
             firstTryCorrect = 0;
+            lastAnswer = null;
             progressEl.textContent = `のこり: ${problems.length}`;
         }
 
@@ -115,8 +117,12 @@
             }
             currentProblemAttempted = false;
             progressEl.textContent = `のこり: ${problems.length}`;
-            const index = Math.floor(Math.random() * problems.length);
-            currentProblem = problems[index];
+            const candidates = problems.filter(p => p.a !== lastAnswer);
+            const pool = candidates.length > 0 ? candidates : problems;
+            const selected = pool[Math.floor(Math.random() * pool.length)];
+            const index = problems.indexOf(selected);
+            currentProblem = selected;
+            lastAnswer = selected.a;
             problems.splice(index, 1);
             questionEl.textContent = currentProblem.q;
             speakThenDo(currentProblem.q.replace('-', 'ひく') + 'は？', () => {});
