@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>計算ぐんぐん</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Kosugi+Maru&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <style>
+    :root {
+      --bg: #fff9f0;
+      --primary: #ff7043;
+      --primary-dark: #e64a19;
+      --accent: #ffd600;
+      --green: #00bfa5;
+      --green-dark: #00897b;
+      --text: #2d2d2d;
+      --muted: #999;
+      --card: #ffffff;
+      --shadow: 0 4px 0 rgba(0,0,0,0.12);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'Kosugi Maru', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* 背景デコレーション */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(255,112,67,0.08) 0%, transparent 40%),
+        radial-gradient(circle at 85% 75%, rgba(0,191,165,0.08) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(255,214,0,0.05) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    /* ========== セット選択画面 ========== */
+    #set-select-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      padding: 32px 24px;
+      width: 100%;
+      max-width: 520px;
+      animation: fadeUp 0.4s ease;
+    }
+
+    .screen-title {
+      font-family: 'Nunito', sans-serif;
+      font-size: 2.4rem;
+      font-weight: 900;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+      text-align: center;
+    }
+    .screen-title span {
+      color: var(--green);
+    }
+
+    .set-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      width: 100%;
+    }
+
+    .set-card {
+      background: var(--card);
+      border: 3px solid #f0e0d0;
+      border-radius: 20px;
+      padding: 20px 16px;
+      cursor: pointer;
+      transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .set-card:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.12); }
+    .set-card .set-num {
+      font-family: 'Nunito', sans-serif;
+      font-size: 2.8rem;
+      font-weight: 900;
+      color: var(--primary);
+      line-height: 1;
+    }
+    .set-card .set-name {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .set-card .set-count {
+      display: inline-block;
+      margin-top: 8px;
+      background: #fff3e0;
+      color: var(--primary);
+      font-size: 0.8rem;
+      font-weight: bold;
+      padding: 2px 10px;
+      border-radius: 20px;
+    }
+    .set-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 6px 0 rgba(0,0,0,0.12); }
+
+    /* ========== スタート/リザルト オーバーレイ ========== */
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(255,249,240,0.96);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      padding: 24px;
+      animation: fadeIn 0.25s ease;
+    }
+    #overlay.hidden { display: none; }
+
+    .overlay-card {
+      background: white;
+      border-radius: 28px;
+      padding: 32px 28px;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(255,112,67,0.15), 0 2px 8px rgba(0,0,0,0.06);
+      border: 3px solid #ffe0cc;
+    }
+
+    .char-icon { font-size: 5rem; line-height: 1; margin-bottom: 8px; }
+    .overlay-title {
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .overlay-sub {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    .result-stats {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin: 16px 0;
+      font-size: 1rem;
+      color: var(--text);
+    }
+    .stat-box {
+      background: #f8f8f8;
+      border-radius: 12px;
+      padding: 10px 20px;
+    }
+    .stat-box .val {
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: var(--primary);
+      display: block;
+    }
+    .stat-box .label { font-size: 0.75rem; color: var(--muted); }
+    .result-comment {
+      font-size: 0.95rem;
+      color: var(--green-dark);
+      font-weight: bold;
+      margin: 12px 0 20px;
+      line-height: 1.6;
+    }
+
+    .btn-primary {
+      display: block;
+      width: 100%;
+      padding: 18px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: white;
+      background: var(--primary);
+      border: none;
+      border-radius: 16px;
+      cursor: pointer;
+      box-shadow: 0 5px 0 var(--primary-dark);
+      transition: transform 0.1s, box-shadow 0.1s;
+      letter-spacing: 0.5px;
+    }
+    .btn-primary:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--primary-dark); }
+
+    .btn-secondary {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 10px 24px;
+      font-size: 0.95rem;
+      color: var(--muted);
+      background: none;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-secondary:hover { border-color: #bbb; color: #666; }
+
+    /* ========== ゲーム画面 ========== */
+    #game-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 560px;
+      padding: 16px 20px;
+      gap: 16px;
+    }
+    #game-screen.active { display: flex; }
+
+    .status-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 1rem;
+      color: var(--muted);
+    }
+    .status-bar .set-label {
+      font-family: 'Nunito', sans-serif;
+      font-weight: 800;
+      color: var(--primary);
+      font-size: 1rem;
+    }
+
+    .progress-wrap {
+      width: 100%;
+      height: 8px;
+      background: #f0e0d0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 8px;
+      transition: width 0.3s ease;
+    }
+
+    #question {
+      font-family: 'Nunito', sans-serif;
+      font-size: 7rem;
+      font-weight: 900;
+      color: var(--green-dark);
+      letter-spacing: -2px;
+      line-height: 1;
+      text-align: center;
+      min-height: 1.1em;
+    }
+
+    /* フィードバック */
+    #feedback {
+      height: 2.4rem;
+      font-family: 'Nunito', sans-serif;
+      font-size: 2rem;
+      font-weight: 900;
+      text-align: center;
+      transition: opacity 0.2s;
+    }
+    #feedback.correct { color: var(--green); }
+    #feedback.wrong { color: var(--primary); }
+
+    /* キーパッド 1〜20 */
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      width: 100%;
+    }
+
+    .key {
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.7rem;
+      font-weight: 900;
+      color: var(--text);
+      background: var(--card);
+      border: 2.5px solid #e8ddd4;
+      border-radius: 14px;
+      padding: 14px 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 0 #e0d0c4;
+      transition: transform 0.08s, box-shadow 0.08s, background 0.08s;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .key:active, .key.pressed {
+      transform: translateY(3px);
+      box-shadow: none;
+      background: var(--accent);
+      border-color: #ffca00;
+    }
+    .key.correct-flash {
+      background: var(--green);
+      color: white;
+      border-color: var(--green-dark);
+    }
+    .key.wrong-flash {
+      background: #ffccbc;
+      border-color: var(--primary);
+    }
+
+    /* デバッグボタン */
+    #debug-btn {
+      position: fixed;
+      bottom: 12px;
+      right: 14px;
+      font-size: 1.4rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      opacity: 0.3;
+      z-index: 99;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.8); opacity: 0; }
+      60% { transform: scale(1.05); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .pop { animation: popIn 0.3s ease forwards; }
+  </style>
+</head>
+<body>
+
+<!-- ========== セット選択 ========== -->
+<div id="set-select-screen">
+  <div class="screen-title">けいさん<span>ぐんぐん</span>🚀</div>
+  <div class="set-grid" id="set-grid"></div>
+</div>
+
+<!-- ========== ゲーム画面 ========== -->
+<div id="game-screen">
+  <div class="status-bar">
+    <span class="set-label" id="set-label">セット1</span>
+    <span id="timer-display">0.0びょう</span>
+    <span id="progress-text">のこり 30</span>
+  </div>
+  <div class="progress-wrap"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+  <div id="question">?</div>
+  <div id="feedback"></div>
+  <div class="keypad" id="keypad"></div>
+</div>
+
+<!-- ========== オーバーレイ ========== -->
+<div id="overlay">
+  <div class="overlay-card" id="overlay-card">
+    <div class="char-icon" id="ov-icon">📚</div>
+    <div class="overlay-title" id="ov-title">けいさんぐんぐん</div>
+    <div class="overlay-sub" id="ov-sub">セットをえらんでね</div>
+    <div class="result-stats" id="ov-stats" style="display:none">
+      <div class="stat-box"><span class="val" id="stat-time">-</span><span class="label">タイム</span></div>
+      <div class="stat-box"><span class="val" id="stat-acc">-</span><span class="label">せいかくさ</span></div>
+    </div>
+    <div class="result-comment" id="ov-comment" style="display:none"></div>
+    <button class="btn-primary" id="start-btn">スタート！</button>
+    <button class="btn-secondary" id="back-btn">セットをえらびなおす</button>
+  </div>
+</div>
+
+<button id="debug-btn">🔧</button>
+
+<script>
+// ============================================================
+//  ★★★ 問題データ ★★★
+//  毎週ここに追加するだけ！
+//  フォーマット: { id:"1", name:"たしざん", problems:["6+8","3+5",...] }
+// ============================================================
+const PROBLEM_SETS = [
+  {
+    id: "1",
+    name: "たしざん①",
+    problems: [
+      "6+8","3+5","5+7","1+4","6+0","3+8","3+3","7+9","2+9","8+2",
+      "2+8","9+0","5+9","1+2","8+3","6+4","6+1","5+2","4+2","2+5",
+      "2+1","9+9","9+6","3+7","1+8","8+7","6+5","0+0","4+3","3+4"
+    ]
+  },
+  {
+    id: "2",
+    name: "ひきざん①",
+    problems: [
+      "2-1","8-2","3-0","9-7","5-5","7-6","10-9","11-7","12-3","8-8",
+      "15-9","8-6","12-7","9-3","10-1","6-3","17-8","8-5","4-0","10-5",
+      "10-0","7-2","5-1","1-1","16-9","14-8","13-9","13-6","11-3","9-6"
+    ]
+  },
+  // ↓ 新しいセットはここに追加 ↓
+  // {
+  //   id: "3",
+  //   name: "たしざん②",
+  //   problems: ["...", ...]
+  // },
+];
+
+// ============================================================
+//  状態
+// ============================================================
+let currentSet = null;
+let problems = [];
+let totalCount = 0;
+let startTime = 0;
+let timerInterval = null;
+let totalAttempts = 0;
+let firstTryCorrect = 0;
+let currentProblem = null;
+let currentAttempted = false;
+let debugTimer = null;
+let canAnswer = false;
+
+// ============================================================
+//  DOM
+// ============================================================
+const setSelectScreen = document.getElementById('set-select-screen');
+const gameScreen      = document.getElementById('game-screen');
+const overlay         = document.getElementById('overlay');
+const setGrid         = document.getElementById('set-grid');
+const setLabel        = document.getElementById('set-label');
+const timerDisplay    = document.getElementById('timer-display');
+const progressText    = document.getElementById('progress-text');
+const progressBar     = document.getElementById('progress-bar');
+const questionEl      = document.getElementById('question');
+const feedbackEl      = document.getElementById('feedback');
+const keypad          = document.getElementById('keypad');
+const startBtn        = document.getElementById('start-btn');
+const backBtn         = document.getElementById('back-btn');
+const ovIcon          = document.getElementById('ov-icon');
+const ovTitle         = document.getElementById('ov-title');
+const ovSub           = document.getElementById('ov-sub');
+const ovStats         = document.getElementById('ov-stats');
+const ovComment       = document.getElementById('ov-comment');
+const statTime        = document.getElementById('stat-time');
+const statAcc         = document.getElementById('stat-acc');
+const debugBtn        = document.getElementById('debug-btn');
+
+// ============================================================
+//  セット選択画面を構築
+// ============================================================
+function buildSetGrid() {
+  setGrid.innerHTML = '';
+  PROBLEM_SETS.forEach(set => {
+    const card = document.createElement('div');
+    card.className = 'set-card';
+    card.innerHTML = `
+      <div class="set-num">${set.id}</div>
+      <div class="set-name">${set.name}</div>
+      <div class="set-count">${set.problems.length}もん</div>
+    `;
+    card.addEventListener('click', () => selectSet(set));
+    setGrid.appendChild(card);
+  });
+}
+
+function selectSet(set) {
+  currentSet = set;
+  setSelectScreen.style.display = 'none';
+  gameScreen.classList.add('active');
+  showStartOverlay();
+}
+
+// ============================================================
+//  オーバーレイ表示（スタート前）
+// ============================================================
+function showStartOverlay() {
+  ovIcon.textContent = '🧮';
+  ovTitle.textContent = `セット ${currentSet.id}：${currentSet.name}`;
+  ovSub.textContent = `${currentSet.problems.length}もん、ぜんぶとけるかな？`;
+  ovStats.style.display = 'none';
+  ovComment.style.display = 'none';
+  startBtn.textContent = 'スタート！';
+  overlay.classList.remove('hidden');
+}
+
+// ============================================================
+//  ゲーム初期化・開始
+// ============================================================
+startBtn.addEventListener('click', () => {
+  overlay.classList.add('hidden');
+  initGame();
+});
+
+backBtn.addEventListener('click', () => {
+  overlay.classList.add('hidden');
+  clearInterval(timerInterval);
+  gameScreen.classList.remove('active');
+  setSelectScreen.style.display = 'flex';
+});
+
+function initGame() {
+  problems = currentSet.problems.map(expr => {
+    const ans = eval(expr.replace('×','*').replace('÷','/'));
+    return { q: expr, a: Math.round(ans) };
+  });
+  totalCount = problems.length;
+  totalAttempts = 0;
+  firstTryCorrect = 0;
+  currentProblem = null;
+  feedbackEl.textContent = '';
+  feedbackEl.className = '';
+  setLabel.textContent = `セット${currentSet.id}`;
+  updateProgress();
+  startTime = performance.now();
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    const t = ((performance.now() - startTime) / 1000).toFixed(1);
+    timerDisplay.textContent = `${t}びょう`;
+  }, 100);
+  askNext();
+}
+
+// ============================================================
+//  問題出題
+// ============================================================
+function askNext() {
+  if (problems.length === 0) { finishGame(); return; }
+  canAnswer = false;
+  currentAttempted = false;
+  const idx = Math.floor(Math.random() * problems.length);
+  currentProblem = problems.splice(idx, 1)[0];
+  questionEl.classList.remove('pop');
+  void questionEl.offsetWidth;
+  questionEl.classList.add('pop');
+  questionEl.textContent = currentProblem.q;
+  updateProgress();
+  speakThenDo(currentProblem.q
+    .replace(/\+/g,' たす ')
+    .replace(/-/g,' ひく ')
+    .replace(/×/g,' かける ')
+    .replace(/÷/g,' わる ')
+    + ' は？', () => { canAnswer = true; });
+}
+
+function updateProgress() {
+  const done = totalCount - problems.length;
+  progressText.textContent = `のこり ${problems.length}`;
+  progressBar.style.width = `${(done / totalCount) * 100}%`;
+}
+
+// ============================================================
+//  キーパッド構築（1〜20）
+// ============================================================
+function buildKeypad() {
+  keypad.innerHTML = '';
+  for (let i = 0; i <= 20; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'key';
+    btn.textContent = i;
+    btn.dataset.val = i;
+    btn.addEventListener('click', () => handleInput(i, btn));
+    keypad.appendChild(btn);
+  }
+}
+
+// ============================================================
+//  入力処理
+// ============================================================
+function handleInput(num, btn) {
+  if (!canAnswer || !currentProblem) return;
+  totalAttempts++;
+  if (num === currentProblem.a) {
+    if (!currentAttempted) firstTryCorrect++;
+    canAnswer = false;
+    btn.classList.add('correct-flash');
+    showFeedback('⭕️ せいかい！', 'correct');
+    setTimeout(() => {
+      btn.classList.remove('correct-flash');
+      askNext();
+    }, 600);
+  } else {
+    currentAttempted = true;
+    btn.classList.add('wrong-flash');
+    showFeedback('❌ ちがうよ', 'wrong');
+    setTimeout(() => btn.classList.remove('wrong-flash'), 300);
+  }
+}
+
+function showFeedback(msg, type) {
+  feedbackEl.textContent = msg;
+  feedbackEl.className = type;
+}
+
+// ============================================================
+//  音声
+// ============================================================
+function speakThenDo(text, cb) {
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ja-JP'; u.rate = 0.9;
+  let done = false;
+  const proceed = () => { if (!done) { done = true; cb(); } };
+  u.onend = proceed;
+  setTimeout(proceed, 1800);
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(u);
+}
+
+// ============================================================
+//  終了・リザルト
+// ============================================================
+function finishGame() {
+  clearInterval(timerInterval);
+  const totalSec = parseFloat(((performance.now() - startTime) / 1000).toFixed(1));
+  const accuracy = Math.round((firstTryCorrect / totalCount) * 100);
+  const isFast = totalSec <= totalCount * 5;  // 1問5秒基準
+  const isAccurate = accuracy >= 80;
+
+  let char, rank, comment, colors;
+  if (isFast && isAccurate) {
+    char='🦄'; rank='ユニコーン';
+    comment='しんじられないスピードとせいかくさ！きみは すうじの まほうつかいだね！';
+    colors=['#ffccff','#ccffff','#ffffcc'];
+  } else if (!isFast && isAccurate) {
+    char='🐼'; rank='パンダ';
+    comment='じっくり かんがえて まちがえない しんちょうさを かんじるよ。すごいね！';
+    colors=['#ff4500','#ff8c00','#ffd700'];
+  } else if (isFast && !isAccurate) {
+    char='🐰'; rank='ウサギ';
+    comment='とっても はやいね！つぎは ちょっとだけ きをつけると もっとすごくなるよ！';
+    colors=['#ffffff','#ffc0cb','#f0f0f0'];
+  } else {
+    char='🐣'; rank='ヒヨコ';
+    comment='さいごまで がんばったね！いっしょに つよくなろう！';
+    colors=['#ffff00','#ffa500','#ffffff'];
+  }
+
+  confetti({ particleCount: 160, spread: 70, origin: { y: 0.6 }, colors });
+
+  ovIcon.textContent = char;
+  ovTitle.textContent = `ランク：${rank}`;
+  ovSub.textContent = '';
+  statTime.textContent = `${totalSec}s`;
+  statAcc.textContent = `${accuracy}%`;
+  ovStats.style.display = 'flex';
+  ovComment.textContent = comment;
+  ovComment.style.display = 'block';
+  startBtn.textContent = 'もういっかい！';
+  overlay.classList.remove('hidden');
+}
+
+// ============================================================
+//  デバッグ
+// ============================================================
+const startPress = (e) => {
+  if (e.type === 'touchstart') e.preventDefault();
+  debugTimer = setTimeout(() => {
+    const mode = prompt('デバッグ\n1:ユニコーン 2:パンダ 3:ウサギ 4:ヒヨコ');
+    if (!mode) return;
+    const now = performance.now();
+    problems = []; totalAttempts = totalCount;
+    switch(mode) {
+      case '1': startTime = now - totalCount*4*1000; firstTryCorrect = totalCount; break;
+      case '2': startTime = now - totalCount*10*1000; firstTryCorrect = totalCount; break;
+      case '3': startTime = now - totalCount*4*1000; firstTryCorrect = Math.floor(totalCount*0.6); break;
+      case '4': startTime = now - totalCount*10*1000; firstTryCorrect = Math.floor(totalCount*0.6); break;
+    }
+    finishGame();
+    overlay.classList.remove('hidden');
+  }, 2000);
+};
+const endPress = () => clearTimeout(debugTimer);
+debugBtn.addEventListener('mousedown', startPress);
+debugBtn.addEventListener('touchstart', startPress, {passive:false});
+debugBtn.addEventListener('mouseup', endPress);
+debugBtn.addEventListener('mouseleave', endPress);
+debugBtn.addEventListener('touchend', endPress);
+
+// ============================================================
+//  初期化
+// ============================================================
+buildSetGrid();
+buildKeypad();
+overlay.classList.add('hidden'); // 最初はセット選択画面を表示
+</script>
+</body>
+</html>
