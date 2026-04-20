@@ -14,7 +14,7 @@
    min-height: 100vh;
    margin: 0;
    padding: 20px 0;
-   background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+   background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
    touch-action: manipulation;
    overflow-y: auto;
   }
@@ -27,14 +27,14 @@
   #main-title {
    font-size: 2rem;
    font-weight: 900;
-   color: #0369a1;
+   color: #c2410c;
    text-shadow: 2px 2px 0px white;
    margin: 0;
   }
   
   #sub-title {
    font-size: 0.9rem;
-   color: #0ea5e9;
+   color: #f97316;
    font-weight: bold;
   }
   
@@ -48,29 +48,22 @@
   
   #timer-display {
    font-size: 1.8rem;
-   color: #ef4444;
+   color: #ea580c;
    font-weight: bold;
    margin-bottom: 10px;
    min-height: 1.2em;
   }
   
-  #progress-container {
-   width: 85%;
-   height: 24px;
-   background: #e2e8f0;
+  #race-canvas {
+   width: 90%;
+   max-width: 400px;
+   height: 110px;
    border-radius: 20px;
-   overflow: hidden;
-   margin-bottom: 20px;
-   border: 4px solid #fff;
-   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-   flex-shrink: 0;
-  }
-  
-  #progress-bar {
-   height: 100%;
-   width: 100%;
-   background: #22c55e;
-   transition: width 1s linear;
+   background: white;
+   border: 3px solid #fff;
+   box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+   margin-bottom: 16px;
+   display: block;
   }
   
   .task-list {
@@ -94,7 +87,7 @@
    justify-content: center;
    font-size: 1.1rem;
    font-weight: bold;
-   box-shadow: 0 5px 0px #cbd5e1;
+   box-shadow: 0 5px 0px #fed7aa;
    cursor: pointer;
    transition: all 0.1s;
    border: 2px solid transparent;
@@ -104,17 +97,17 @@
   
   .task-item:active {
    transform: translateY(3px);
-   box-shadow: 0 2px 0px #cbd5e1;
+   box-shadow: 0 2px 0px #fed7aa;
   }
   
   .task-item.done {
-   background: #d1fae5;
-   color: #10b981;
+   background: #fef9c3;
+   color: #d97706;
    text-decoration: line-through;
    opacity: 0.7;
    box-shadow: none;
    transform: translateY(3px);
-   border-color: #10b981;
+   border-color: #f59e0b;
   }
   
   .task-icon {
@@ -135,9 +128,9 @@
    padding: 12px 25px;
    font-size: 1.1rem;
    border-radius: 50px;
-   border: 2px solid #0ea5e9;
+   border: 2px solid #f97316;
    background: white;
-   color: #0ea5e9;
+   color: #f97316;
    font-weight: bold;
    cursor: pointer;
   }
@@ -166,7 +159,7 @@
    font-weight: bold;
    margin: 20px;
    white-space: pre-wrap;
-   color: #0369a1;
+   color: #c2410c;
   }
   
   #retry-btn {
@@ -174,9 +167,9 @@
    font-size: 1.6rem;
    border-radius: 20px;
    border: none;
-   background: #0ea5e9;
+   background: #f97316;
    color: white;
-   box-shadow: 0 6px #0284c7;
+   box-shadow: 0 6px #ea580c;
    font-weight: bold;
   }
  </style>
@@ -185,16 +178,14 @@
 <body>
  
  <div id="header">
-  <p id="sub-title">＼ きょうも かっこよく ／</p>
+  <p id="sub-title">＼ さあ、レース スタート！ ／</p>
   <h1 id="main-title">あさのミッション！</h1>
  </div>
  
  <div id="clock-container">00:00:00</div>
  <div id="timer-display">準備中...</div>
  
- <div id="progress-container">
-  <div id="progress-bar"></div>
- </div>
+ <canvas id="race-canvas"></canvas>
  
  <div class="task-list" id="task-list">
   <div class="task-item" onclick="toggleTask(this)"><span class="task-icon">🍚</span><span class="task-text">あさごはん</span></div>
@@ -214,101 +205,268 @@
  </div>
  
  <script>
+  // ── 設定 ──────────────────────────────
   const TARGET_HOUR = 7;
-  const TARGET_MIN = 45;
-  const START_MIN = 30;
-  const TOTAL_SECONDS = (TARGET_MIN - START_MIN) * 60;
-  
-  let isTestMode = false;
-  let testEndTime = null;
-  
-  const clockEl = document.getElementById('clock-container');
-  const timerEl = document.getElementById('timer-display');
-  const progressBar = document.getElementById('progress-bar');
-  const overlay = document.getElementById('result-overlay');
-  const resEmoji = document.getElementById('res-emoji');
-  const resText = document.getElementById('res-text');
+  const TARGET_MIN  = 45;
+  const HARD_MIN    = 50; // 本当の締め切り
+  const MAX_SECONDS = 15 * 60;
+
+  // ── 状態 ──────────────────────────────
+  let isTestMode       = false;
+  let testEndTime      = null;
+  let countdownStarted = false;
+  let deadline         = null;
+  let isTimedOut       = false; // 7:45超過フラグ（タスク完了で逆転可）
+  let animFrame        = 0;     // カメの足アニメ用
+  let tasksDone        = 0;     // 完了タスク数（カメの位置に使う）
+  const TOTAL_TASKS    = 4;
+
+  // ── DOM ───────────────────────────────
+  const clockEl        = document.getElementById('clock-container');
+  const timerEl        = document.getElementById('timer-display');
+  const overlay        = document.getElementById('result-overlay');
+  const resEmoji       = document.getElementById('res-emoji');
+  const resText        = document.getElementById('res-text');
   const testBtnContainer = document.getElementById('test-mode-container');
-  
+
+  // ── Canvas ────────────────────────────
+  const canvas = document.getElementById('race-canvas');
+  const ctx    = canvas.getContext('2d');
+
+  function resizeCanvas() {
+   canvas.width  = canvas.offsetWidth;
+   canvas.height = canvas.offsetHeight;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  // ── レース描画 ────────────────────────
+  function drawRace(remainingSec) {
+   const W = canvas.width;
+   const H = canvas.height;
+   ctx.clearRect(0, 0, W, H);
+
+   // 背景グラデーション（空→草）
+   const bg = ctx.createLinearGradient(0, 0, 0, H);
+   ctx.fillStyle = 'white';
+   ctx.fillRect(0, 0, W, H);
+
+   // 地面ライン
+   const ground = H * 0.62;
+   ctx.strokeStyle = '#d97706';
+   ctx.lineWidth = 2;
+   ctx.beginPath();
+   ctx.moveTo(0, ground);
+   ctx.lineTo(W, ground);
+   ctx.stroke();
+
+   // ゴールライン（左端）
+   const goalX = 36;
+   ctx.strokeStyle = '#dc2626';
+   ctx.lineWidth = 3;
+   ctx.setLineDash([6, 4]);
+   ctx.beginPath();
+   ctx.moveTo(goalX, ground - 38);
+   ctx.lineTo(goalX, ground + 2);
+   ctx.stroke();
+   ctx.setLineDash([]);
+   ctx.font = 'bold 11px sans-serif';
+   ctx.fillStyle = '#dc2626';
+   ctx.textAlign = 'center';
+   ctx.fillText('ゴール', goalX, ground + 16);
+
+   const raceW = W - 30 - goalX;
+
+    // ── カメ（時間とともにじわじわ進む） ──
+   const elapsed     = MAX_SECONDS - Math.max(remainingSec, 0);
+   const turtleRatio = countdownStarted ? Math.min(elapsed / MAX_SECONDS, 1) : 0;
+   const turtleX     = (W - 30) - raceW * turtleRatio;
+
+   const catching = isTimedOut && tasksDone < TOTAL_TASKS;
+
+   ctx.font = '28px serif';
+   ctx.textAlign = 'center';
+   ctx.fillText('🐢', turtleX, ground - 10);
+ 
+  // ── ウサギ（タスクタップで前進・子どもが操作） ──
+   const rabbitRatio = tasksDone / TOTAL_TASKS;
+   const rabbitX     = (W - 30) - raceW * rabbitRatio;
+   const legOffset   = countdownStarted ? Math.sin(animFrame * 0.3) * 3 : 0;
+
+   ctx.font = '28px serif';
+   ctx.textAlign = 'center';
+   ctx.save();
+   ctx.translate(rabbitX, ground - 10 + legOffset);
+   ctx.fillText('🐇', 0, 0);
+   ctx.restore();
+
+   // ── 吹き出し（ウサギへの応援） ──
+   if (countdownStarted && !isTimedOut && remainingSec > 0) {
+    const msg = remainingSec > 8 * 60 ? 'がんばれ！' :
+            remainingSec > 3 * 60 ? 'いそげ！' : 'あと少し！！';
+    const bx = Math.max(rabbitX - 72, goalX + 4);
+    const by = ground - 48;
+    ctx.fillStyle = 'white';
+    ctx.strokeStyle = '#f97316';
+    ctx.lineWidth = 2;
+    ctx.font = 'bold 12px sans-serif';
+    const msgWidth = ctx.measureText(msg).width;
+    roundRect(ctx, bx - 2, by - 16, msgWidth + 16, 22, 8);
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillStyle = '#c2410c';
+    ctx.textAlign = 'left';
+    ctx.fillText(msg, bx + 2, by - 1);
+   }
+
+   // ── カメが追いついてきてる時の吹き出し ──
+   if (catching) {
+    const bx = Math.max(turtleX - 86, goalX + 4);
+    const by = ground - 48;
+    ctx.fillStyle = 'white';
+    ctx.strokeStyle = '#dc2626';
+    ctx.lineWidth = 2;
+    roundRect(ctx, bx - 2, by - 16, 88, 22, 8);
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillStyle = '#dc2626';
+    ctx.textAlign = 'left';
+    ctx.fillText('カメがはやい！！', bx + 2, by - 1);
+   }
+
+   animFrame++;
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+   ctx.beginPath();
+   ctx.moveTo(x + r, y);
+   ctx.lineTo(x + w - r, y);
+   ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+   ctx.lineTo(x + w, y + h - r);
+   ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+   ctx.lineTo(x + r, y + h);
+   ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+   ctx.lineTo(x, y + r);
+   ctx.quadraticCurveTo(x, y, x + r, y);
+   ctx.closePath();
+   ctx.fill();
+   ctx.stroke();
+  }
+
+  // ── カウントダウン開始 ────────────────
+  function startCountdown() {
+   countdownStarted = true;
+   testBtnContainer.style.display = 'none';
+   deadline = new Date();
+   deadline.setHours(TARGET_HOUR, TARGET_MIN, 0, 0);
+  }
+
+  // ── メインループ ──────────────────────
   function update() {
    const now = new Date();
    clockEl.textContent = now.toLocaleTimeString('ja-JP', { hour12: false });
-   
+
+   let remainingSec = MAX_SECONDS;
+
    if (isTestMode) {
-    runTimerLogic(testEndTime - now);
-    return;
-   }
-   
-   const currentTotalMin = now.getHours() * 60 + now.getMinutes();
-   const startLimit = TARGET_HOUR * 60 + START_MIN;
-   const endLimit = TARGET_HOUR * 60 + TARGET_MIN;
-   
-   if (currentTotalMin >= startLimit && currentTotalMin < endLimit) {
-    testBtnContainer.style.display = 'none';
-    const deadline = new Date();
-    deadline.setHours(TARGET_HOUR, TARGET_MIN, 0);
-    runTimerLogic(deadline - now);
+    remainingSec = Math.floor((testEndTime - now) / 1000);
+    if (remainingSec <= 0 && !isTimedOut) softTimeout();
+   } else if (countdownStarted && deadline) {
+    remainingSec = Math.floor((deadline - now) / 1000);
+    if (remainingSec <= 0 && !isTimedOut) softTimeout();
+
+    // ハード期限（7:50）でゲームオーバー
+    const hardDeadline = new Date();
+    hardDeadline.setHours(TARGET_HOUR, HARD_MIN, 0, 0);
+    if (now >= hardDeadline && tasksDone < TOTAL_TASKS) {
+     hardTimeout();
+     return;
+    }
    } else {
-    timerEl.textContent = "待機中...";
-    timerEl.style.color = "#94a3b8";
-    progressBar.style.width = "100%";
-    progressBar.style.background = "#cbd5e1";
-    testBtnContainer.style.display = 'block';
+    timerEl.textContent = '🍚 ごはんを たべよう！';
+    timerEl.style.color = '#94a3b8';
+    timerEl.style.fontSize = '1.2rem';
    }
-  }
-  
-  function runTimerLogic(diffMs) {
-   const remainingSec = Math.floor(diffMs / 1000);
-   if (remainingSec <= 0) {
-    checkFinish(false);
-   } else {
-    const m = Math.floor(remainingSec / 60);
-    const s = remainingSec % 60;
-    timerEl.textContent = `あと ${m}:${s.toString().padStart(2, '0')}`;
-    timerEl.style.color = "#ef4444";
-    const percent = (remainingSec / TOTAL_SECONDS) * 100;
-    progressBar.style.width = `${percent}%`;
-    progressBar.style.background = percent < 20 ? '#ef4444' : '#22c55e';
+
+   if (countdownStarted || isTestMode) {
+    if (isTimedOut && tasksDone < TOTAL_TASKS) {
+     // 延長戦表示
+     const hardDeadline = new Date();
+     hardDeadline.setHours(TARGET_HOUR, HARD_MIN, 0, 0);
+     const extSec = Math.max(Math.floor((hardDeadline - now) / 1000), 0);
+     const em = Math.floor(extSec / 60);
+     const es = extSec % 60;
+     timerEl.textContent = `⏰ のこり ${em}:${es.toString().padStart(2,'0')}`;
+     timerEl.style.color = '#f97316';
+     timerEl.style.fontSize = '1.6rem';
+    } else if (!isTimedOut) {
+     const sec = Math.max(remainingSec, 0);
+     const m = Math.floor(sec / 60);
+     const s = sec % 60;
+     timerEl.textContent = `あと ${m}:${s.toString().padStart(2, '0')}`;
+     timerEl.style.color = sec < 3 * 60 ? '#dc2626' : '#ef4444';
+     timerEl.style.fontSize = '1.8rem';
+    }
    }
+
+   drawRace(remainingSec);
   }
-  
-  function startTest() {
-   isTestMode = true;
-   testBtnContainer.style.display = 'none';
-   testEndTime = new Date(new Date().getTime() + TOTAL_SECONDS * 1000);
-   speak("練習モード、スタート！");
+
+  function softTimeout() {
+   isTimedOut = true;
+   speak('まだ間に合う！いそいで！');
   }
-  
+
+  function hardTimeout() {
+   checkFinish(false);
+  }
+
+  // ── タスクトグル ──────────────────────
   function toggleTask(el) {
    if (overlay.style.display === 'flex') return;
-   
-   const isDone = el.classList.toggle('done');
-   if (isDone) {
-    const textOnly = el.querySelector('.task-text').textContent;
-    speak(textOnly + "、できたね！");
+
+   const isDone   = el.classList.toggle('done');
+   const textOnly = el.querySelector('.task-text').textContent;
+
+   if (isDone && textOnly === 'あさごはん' && !countdownStarted && !isTestMode) {
+    startCountdown();
    }
-   
-   const allTasks = document.querySelectorAll('.task-item');
-   const doneTasks = document.querySelectorAll('.task-item.done');
-   if (allTasks.length === doneTasks.length) {
-    checkFinish(true);
-   }
+
+   tasksDone = document.querySelectorAll('.task-item.done').length;
+
+   if (isDone) speak(textOnly + '、できたね！');
+
+   if (tasksDone === TOTAL_TASKS) checkFinish(true);
   }
-  
+
+  // ── 結果 ──────────────────────────────
   function checkFinish(isSuccess) {
    clearInterval(interval);
    overlay.style.display = 'flex';
    if (isSuccess) {
-    resEmoji.textContent = "💖😸🏆";
-    resText.textContent = "ミッションコンプリート！\nきみは最高だ！";
-    speak("おめでとう！ミッションクリア！君は素敵な魔法少女だね！");
+    resEmoji.textContent = '🐇🏆✨';
+    const msg = isTimedOut
+     ? 'セーフ！\nウサギの勝ち！'
+     : 'ミッションコンプリート！\nウサギの勝ち！';
+    resText.textContent = msg;
+    speak(isTimedOut
+     ? 'やったー！間に合った！ウサギの勝ち！最高！'
+     : 'おめでとう！ミッションクリア！ウサギが勝ったよ！');
    } else {
-    resEmoji.textContent = "🤖💩🙀";
-    resText.textContent = "タイムアップ！\nあしたはもっとパワーがたまるよ！";
-    speak("タイムアップ！明日の挑戦も待ってるよ！");
+    resEmoji.textContent = '🐢💨😫';
+    resText.textContent  = 'カメに\nまけちゃった！\nあしたリベンジだ！';
+    speak('カメに負けちゃった！でも明日もチャレンジしよう！');
    }
   }
-  
+
+  // ── 練習モード ────────────────────────
+  function startTest() {
+   isTestMode = true;
+   countdownStarted = true;
+   testBtnContainer.style.display = 'none';
+   testEndTime = new Date(new Date().getTime() + MAX_SECONDS * 1000);
+   speak('練習モード、スタート！');
+  }
+
+  // ── 音声 ──────────────────────────────
   function speak(text) {
    const uttr = new SpeechSynthesisUtterance(text);
    uttr.lang = 'ja-JP';
@@ -316,43 +474,9 @@
    window.speechSynthesis.cancel();
    window.speechSynthesis.speak(uttr);
   }
-  
+
   const interval = setInterval(update, 1000);
   update();
-  
-  // スクリーンロックの状態を保持
-  let wakeLock = null;
-  
-  // ロックを取得する関数
-  const requestWakeLock = async () => {
-   try {
-    if ('wakeLock' in navigator) {
-     wakeLock = await navigator.wakeLock.request('screen');
-     console.log('Screen Wake Lock is active');
-     
-     // 画面が切り替わった（タブ移動など）後に戻ってきた際の再取得
-     wakeLock.addEventListener('release', () => {
-      console.log('Screen Wake Lock was released');
-     });
-    }
-   } catch (err) {
-    console.error(`${err.name}, ${err.message}`);
-   }
-  };
-  
-  // ユーザーが画面をタップ（タスク操作や開始ボタン）した時にロックを開始
-  document.addEventListener('click', () => {
-   if (!wakeLock) {
-    requestWakeLock();
-   }
-  }, { once: false });
-  
-  // 画面が再表示された時に再取得する処理
-  document.addEventListener('visibilitychange', async () => {
-   if (wakeLock !== null && document.visibilityState === 'visible') {
-    await requestWakeLock();
-   }
-  });
  </script>
 </body>
 
