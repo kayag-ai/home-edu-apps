@@ -18,218 +18,149 @@
    touch-action: manipulation;
    overflow-y: auto;
   }
-  
-  #header {
-   text-align: center;
-   margin-bottom: 10px;
-  }
-  
+  #header { text-align: center; margin-bottom: 10px; }
   #main-title {
-   font-size: 2rem;
-   font-weight: 900;
-   color: #c2410c;
-   text-shadow: 2px 2px 0px white;
-   margin: 0;
+   font-size: 2rem; font-weight: 900; color: #c2410c;
+   text-shadow: 2px 2px 0px white; margin: 0;
   }
-  
-  #sub-title {
-   font-size: 0.9rem;
-   color: #f97316;
-   font-weight: bold;
-  }
-  
+  #sub-title { font-size: 0.9rem; color: #f97316; font-weight: bold; }
   #clock-container {
-   font-size: 2.8rem;
-   font-weight: 900;
-   color: #1e293b;
-   margin: 5px 0;
-   letter-spacing: 2px;
+   font-size: 2.8rem; font-weight: 900; color: #1e293b;
+   margin: 5px 0; letter-spacing: 2px;
   }
-  
+  #timer-display-area {
+   height: 3.2rem; display: flex; align-items: center;
+   justify-content: center; margin-bottom: 6px;
+  }
   #timer-display {
-   font-size: 1.8rem;
-   color: #ea580c;
-   font-weight: bold;
+   font-size: 1.8rem; color: #ea580c; font-weight: bold; display: none;
+  }
+  #meal-select {
+   display: flex; flex-direction: column; align-items: center; gap: 6px;
    margin-bottom: 10px;
-   min-height: 1.2em;
   }
-  
+  #meal-select-label {
+   font-size: 0.85rem; color: #92400e; font-weight: bold;
+  }
+  #meal-buttons { display: flex; gap: 10px; }
+  .meal-btn {
+   padding: 10px 20px; font-size: 1.1rem; border-radius: 50px;
+   border: 2px solid #f97316; background: white; color: #f97316;
+   font-weight: bold; cursor: pointer; transition: all 0.1s;
+  }
+  .meal-btn:active { transform: translateY(2px); }
+  .meal-btn.selected {
+   background: #f97316; color: white; box-shadow: 0 3px #ea580c;
+  }
+  #start-btn {
+   padding: 10px 28px; font-size: 1.1rem; border-radius: 50px;
+   border: none; background: #d1d5db; color: white;
+   font-weight: bold; cursor: not-allowed; margin-top: 4px;
+   transition: all 0.2s;
+  }
+  #start-btn.ready {
+   background: #f97316; cursor: pointer; box-shadow: 0 3px #ea580c;
+  }
+  #start-btn.ready:active { transform: translateY(2px); box-shadow: 0 1px #ea580c; }
   #race-canvas {
-   width: 90%;
-   max-width: 400px;
-   height: 110px;
-   border-radius: 20px;
-   background: white;
-   border: 3px solid #fff;
-   box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-   margin-bottom: 16px;
-   display: block;
+   width: 90%; max-width: 400px; height: 110px; border-radius: 20px;
+   background: white; border: 3px solid #fff;
+   box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 16px; display: block;
   }
-  
   .task-list {
-   width: 95%;
-   max-width: 400px;
-   margin: 0 auto;
-   display: grid;
-   grid-template-columns: repeat(2, 1fr);
-   gap: 12px;
-   padding: 10px;
-   box-sizing: border-box;
+   width: 95%; max-width: 400px; margin: 0 auto;
+   display: grid; grid-template-columns: repeat(2, 1fr);
+   gap: 12px; padding: 10px; box-sizing: border-box;
   }
-  
   .task-item {
-   background: white;
-   aspect-ratio: 1 / 1;
-   border-radius: 18px;
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   justify-content: center;
-   font-size: 1.1rem;
-   font-weight: bold;
-   box-shadow: 0 5px 0px #fed7aa;
-   cursor: pointer;
-   transition: all 0.1s;
-   border: 2px solid transparent;
-   box-sizing: border-box;
-   text-align: center;
+   background: white; aspect-ratio: 1 / 1; border-radius: 18px;
+   display: flex; flex-direction: column; align-items: center;
+   justify-content: center; font-size: 1.1rem; font-weight: bold;
+   box-shadow: 0 5px 0px #fed7aa; cursor: pointer; transition: all 0.1s;
+   border: 2px solid transparent; box-sizing: border-box; text-align: center;
   }
-  
-  .task-item:active {
-   transform: translateY(3px);
-   box-shadow: 0 2px 0px #fed7aa;
-  }
-  
+  .task-item:active { transform: translateY(3px); box-shadow: 0 2px 0px #fed7aa; }
   .task-item.done {
-   background: #fef9c3;
-   color: #d97706;
-   text-decoration: line-through;
-   opacity: 0.7;
-   box-shadow: none;
-   transform: translateY(3px);
-   border-color: #f59e0b;
+   background: #fef9c3; color: #d97706; text-decoration: line-through;
+   opacity: 0.7; box-shadow: none; transform: translateY(3px); border-color: #f59e0b;
   }
-  
-  .task-icon {
-   font-size: 2rem;
-   margin-bottom: 5px;
-   pointer-events: none;
-  }
-  
-  .task-text {
-   pointer-events: none;
-  }
-  
-  #test-mode-container {
-   margin: 20px 0;
-  }
-  
-  #test-start-btn {
-   padding: 12px 25px;
-   font-size: 1.1rem;
-   border-radius: 50px;
-   border: 2px solid #f97316;
-   background: white;
-   color: #f97316;
-   font-weight: bold;
-   cursor: pointer;
-  }
-  
+  .task-icon { font-size: 2rem; margin-bottom: 5px; pointer-events: none; }
+  .task-text { pointer-events: none; }
   #result-overlay {
-   position: fixed;
-   top: 0;
-   left: 0;
-   width: 100%;
-   height: 100%;
-   background: rgba(255, 255, 255, 0.98);
-   display: none;
-   flex-direction: column;
-   align-items: center;
-   justify-content: center;
-   z-index: 10;
-   text-align: center;
+   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+   background: rgba(255,255,255,0.98); display: none; flex-direction: column;
+   align-items: center; justify-content: center; z-index: 10; text-align: center;
   }
-  
-  .result-emoji {
-   font-size: 6rem;
-  }
-  
+  .result-emoji { font-size: 6rem; }
   .result-text {
-   font-size: 1.8rem;
-   font-weight: bold;
-   margin: 20px;
-   white-space: pre-wrap;
-   color: #c2410c;
+   font-size: 1.8rem; font-weight: bold; margin: 20px;
+   white-space: pre-wrap; color: #c2410c;
   }
-  
   #retry-btn {
-   padding: 15px 45px;
-   font-size: 1.6rem;
-   border-radius: 20px;
-   border: none;
-   background: #f97316;
-   color: white;
-   box-shadow: 0 6px #ea580c;
-   font-weight: bold;
+   padding: 15px 45px; font-size: 1.6rem; border-radius: 20px; border: none;
+   background: #f97316; color: white; box-shadow: 0 6px #ea580c; font-weight: bold;
   }
  </style>
 </head>
 
 <body>
- 
  <div id="header">
   <p id="sub-title">＼ さあ、レース スタート！ ／</p>
   <h1 id="main-title">あさのミッション！</h1>
  </div>
- 
+
  <div id="clock-container">00:00:00</div>
- <div id="timer-display">準備中...</div>
- 
+
+ <div id="timer-display-area">
+  <div id="timer-display"></div>
+ </div>
+
+ <div id="meal-select">
+  <div id="meal-select-label">🍚 ごはん、あと何分？</div>
+  <div id="meal-buttons">
+   <button class="meal-btn" onclick="selectMeal(this, 15)">15分</button>
+   <button class="meal-btn" onclick="selectMeal(this, 20)">20分</button>
+   <button class="meal-btn" onclick="selectMeal(this, 25)">25分</button>
+  </div>
+  <button id="start-btn" onclick="startMission()" disabled>🚀 スタート！</button>
+ </div>
+
  <canvas id="race-canvas"></canvas>
- 
+
  <div class="task-list" id="task-list">
   <div class="task-item" onclick="toggleTask(this)"><span class="task-icon">🍚</span><span class="task-text">あさごはん</span></div>
   <div class="task-item" onclick="toggleTask(this)"><span class="task-icon">🚽</span><span class="task-text">トイレ</span></div>
   <div class="task-item" onclick="toggleTask(this)"><span class="task-icon">🪥</span><span class="task-text">はみがき</span></div>
   <div class="task-item" onclick="toggleTask(this)"><span class="task-icon">👕</span><span class="task-text">きがえ</span></div>
  </div>
- 
- <div id="test-mode-container">
-  <button id="test-start-btn" onclick="startTest()">🚀 れんしゅうモード</button>
- </div>
- 
+
  <div id="result-overlay">
   <div class="result-emoji" id="res-emoji"></div>
   <div class="result-text" id="res-text"></div>
   <button id="retry-btn" onclick="location.reload()">おわり</button>
  </div>
- 
+
  <script>
-  // ── 設定 ──────────────────────────────
-  const TARGET_HOUR = 7;
-  const TARGET_MIN  = 45;
-  const HARD_MIN    = 50; // 本当の締め切り
-  const MAX_SECONDS = 15 * 60;
+  const PREP_SECS   = 15 * 60;
+  const TOTAL_TASKS = 4;
 
-  // ── 状態 ──────────────────────────────
-  let isTestMode       = false;
-  let testEndTime      = null;
-  let countdownStarted = false;
-  let deadline         = null;
-  let isTimedOut       = false; // 7:45超過フラグ（タスク完了で逆転可）
-  let animFrame        = 0;     // カメの足アニメ用
-  let tasksDone        = 0;     // 完了タスク数（カメの位置に使う）
-  const TOTAL_TASKS    = 4;
+  let selectedMealMins  = null;
+  let rabbitStartBonus  = 0.5; // startMission時に動的に計算
+  let countdownStarted  = false;
+  let endTime          = null;
+  let totalSeconds     = 0;
+  let tasksDone        = 0;
+  let animFrame        = 0;
+  let isFinished       = false;
 
-  // ── DOM ───────────────────────────────
-  const clockEl        = document.getElementById('clock-container');
-  const timerEl        = document.getElementById('timer-display');
-  const overlay        = document.getElementById('result-overlay');
-  const resEmoji       = document.getElementById('res-emoji');
-  const resText        = document.getElementById('res-text');
-  const testBtnContainer = document.getElementById('test-mode-container');
+  const clockEl   = document.getElementById('clock-container');
+  const timerEl   = document.getElementById('timer-display');
+  const mealSelect = document.getElementById('meal-select');
+  const startBtn  = document.getElementById('start-btn');
+  const overlay   = document.getElementById('result-overlay');
+  const resEmoji  = document.getElementById('res-emoji');
+  const resText   = document.getElementById('res-text');
 
-  // ── Canvas ────────────────────────────
   const canvas = document.getElementById('race-canvas');
   const ctx    = canvas.getContext('2d');
 
@@ -240,96 +171,80 @@
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
 
+  // ── 食事時間選択 ──────────────────────
+  function selectMeal(btn, mins) {
+   document.querySelectorAll('.meal-btn').forEach(b => b.classList.remove('selected'));
+   btn.classList.add('selected');
+   selectedMealMins = mins;
+   startBtn.disabled = false;
+   startBtn.classList.add('ready');
+  }
+
+  // ── ミッション開始 ────────────────────
+  function startMission() {
+   if (!selectedMealMins) return;
+   totalSeconds     = (selectedMealMins + 15) * 60;
+   rabbitStartBonus = selectedMealMins / (selectedMealMins + 15);
+   endTime = new Date(new Date().getTime() + totalSeconds * 1000);
+   countdownStarted = true;
+   mealSelect.style.display = 'none';
+   timerEl.style.display = 'block';
+   speak(`${selectedMealMins}分でごはん、そのあと支度だね。カメに負けないように出発！`);
+  }
+
   // ── レース描画 ────────────────────────
   function drawRace(remainingSec) {
    const W = canvas.width;
    const H = canvas.height;
    ctx.clearRect(0, 0, W, H);
-
-   // 背景グラデーション（空→草）
-   const bg = ctx.createLinearGradient(0, 0, 0, H);
    ctx.fillStyle = 'white';
    ctx.fillRect(0, 0, W, H);
 
-   // 地面ライン
    const ground = H * 0.62;
    ctx.strokeStyle = '#d97706';
    ctx.lineWidth = 2;
-   ctx.beginPath();
-   ctx.moveTo(0, ground);
-   ctx.lineTo(W, ground);
-   ctx.stroke();
+   ctx.beginPath(); ctx.moveTo(0, ground); ctx.lineTo(W, ground); ctx.stroke();
 
-   // ゴールライン（左端）
    const goalX = 36;
-   ctx.strokeStyle = '#dc2626';
-   ctx.lineWidth = 3;
-   ctx.setLineDash([6, 4]);
-   ctx.beginPath();
-   ctx.moveTo(goalX, ground - 38);
-   ctx.lineTo(goalX, ground + 2);
-   ctx.stroke();
+   ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 3; ctx.setLineDash([6,4]);
+   ctx.beginPath(); ctx.moveTo(goalX, ground-38); ctx.lineTo(goalX, ground+2); ctx.stroke();
    ctx.setLineDash([]);
-   ctx.font = 'bold 11px sans-serif';
-   ctx.fillStyle = '#dc2626';
-   ctx.textAlign = 'center';
-   ctx.fillText('ゴール', goalX, ground + 16);
+   ctx.font = 'bold 11px sans-serif'; ctx.fillStyle = '#dc2626';
+   ctx.textAlign = 'center'; ctx.fillText('ゴール', goalX, ground+16);
 
    const raceW = W - 30 - goalX;
 
-    // ── カメ（時間とともにじわじわ進む） ──
-   const elapsed     = MAX_SECONDS - Math.max(remainingSec, 0);
-   const turtleRatio = countdownStarted ? Math.min(elapsed / MAX_SECONDS, 1) : 0;
+   // カメ（時間で進む）
+   const elapsed     = totalSeconds - Math.max(remainingSec, 0);
+   const turtleRatio = countdownStarted ? Math.min(elapsed / totalSeconds, 1) : 0;
    const turtleX     = (W - 30) - raceW * turtleRatio;
-
-   const catching = isTimedOut && tasksDone < TOTAL_TASKS;
-
-   ctx.font = '28px serif';
-   ctx.textAlign = 'center';
+   ctx.font = '28px serif'; ctx.textAlign = 'center';
    ctx.fillText('🐢', turtleX, ground - 10);
- 
-  // ── ウサギ（タスクタップで前進・子どもが操作） ──
-   const rabbitRatio = tasksDone / TOTAL_TASKS;
-   const rabbitX     = (W - 30) - raceW * rabbitRatio;
-   const legOffset   = countdownStarted ? Math.sin(animFrame * 0.3) * 3 : 0;
 
-   ctx.font = '28px serif';
-   ctx.textAlign = 'center';
+   // ウサギ（初期ボーナス＋タスクで進む）
+   const taskProgress = (tasksDone / TOTAL_TASKS) * (1 - rabbitStartBonus);
+   const rabbitRatio  = countdownStarted ? (rabbitStartBonus + taskProgress) : rabbitStartBonus;
+   const rabbitX      = (W - 30) - raceW * rabbitRatio;
+   const legOffset    = countdownStarted ? Math.sin(animFrame * 0.3) * 3 : 0;
    ctx.save();
    ctx.translate(rabbitX, ground - 10 + legOffset);
    ctx.fillText('🐇', 0, 0);
    ctx.restore();
 
-   // ── 吹き出し（ウサギへの応援） ──
-   if (countdownStarted && !isTimedOut && remainingSec > 0) {
-    const msg = remainingSec > 8 * 60 ? 'がんばれ！' :
-            remainingSec > 3 * 60 ? 'いそげ！' : 'あと少し！！';
-    const bx = Math.max(rabbitX - 72, goalX + 4);
+   // 吹き出し
+   if (countdownStarted && remainingSec > 0) {
+    const isTurtleAhead = turtleX < rabbitX;
+    const msg         = isTurtleAhead ? 'カメがはやい！！' : 'がんばれ！';
+    const bubbleColor = isTurtleAhead ? '#dc2626' : '#f97316';
+    const textColor   = isTurtleAhead ? '#dc2626' : '#c2410c';
+    const bx = Math.max(rabbitX - 80, goalX + 4);
     const by = ground - 48;
-    ctx.fillStyle = 'white';
-    ctx.strokeStyle = '#f97316';
-    ctx.lineWidth = 2;
+    ctx.fillStyle = 'white'; ctx.strokeStyle = bubbleColor; ctx.lineWidth = 2;
     ctx.font = 'bold 12px sans-serif';
     const msgWidth = ctx.measureText(msg).width;
-    roundRect(ctx, bx - 2, by - 16, msgWidth + 16, 22, 8);
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillStyle = '#c2410c';
-    ctx.textAlign = 'left';
-    ctx.fillText(msg, bx + 2, by - 1);
-   }
-
-   // ── カメが追いついてきてる時の吹き出し ──
-   if (catching) {
-    const bx = Math.max(turtleX - 86, goalX + 4);
-    const by = ground - 48;
-    ctx.fillStyle = 'white';
-    ctx.strokeStyle = '#dc2626';
-    ctx.lineWidth = 2;
-    roundRect(ctx, bx - 2, by - 16, 88, 22, 8);
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillStyle = '#dc2626';
-    ctx.textAlign = 'left';
-    ctx.fillText('カメがはやい！！', bx + 2, by - 1);
+    roundRect(ctx, bx-2, by-16, msgWidth+16, 22, 8);
+    ctx.fillStyle = textColor; ctx.textAlign = 'left';
+    ctx.fillText(msg, bx+6, by-1);
    }
 
    animFrame++;
@@ -337,26 +252,15 @@
 
   function roundRect(ctx, x, y, w, h, r) {
    ctx.beginPath();
-   ctx.moveTo(x + r, y);
-   ctx.lineTo(x + w - r, y);
-   ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-   ctx.lineTo(x + w, y + h - r);
-   ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-   ctx.lineTo(x + r, y + h);
-   ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-   ctx.lineTo(x, y + r);
-   ctx.quadraticCurveTo(x, y, x + r, y);
-   ctx.closePath();
-   ctx.fill();
-   ctx.stroke();
-  }
-
-  // ── カウントダウン開始 ────────────────
-  function startCountdown() {
-   countdownStarted = true;
-   testBtnContainer.style.display = 'none';
-   deadline = new Date();
-   deadline.setHours(TARGET_HOUR, TARGET_MIN, 0, 0);
+   ctx.moveTo(x+r, y); ctx.lineTo(x+w-r, y);
+   ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+   ctx.lineTo(x+w, y+h-r);
+   ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+   ctx.lineTo(x+r, y+h);
+   ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+   ctx.lineTo(x, y+r);
+   ctx.quadraticCurveTo(x, y, x+r, y);
+   ctx.closePath(); ctx.fill(); ctx.stroke();
   }
 
   // ── メインループ ──────────────────────
@@ -364,113 +268,51 @@
    const now = new Date();
    clockEl.textContent = now.toLocaleTimeString('ja-JP', { hour12: false });
 
-   let remainingSec = MAX_SECONDS;
-
-   if (isTestMode) {
-    remainingSec = Math.floor((testEndTime - now) / 1000);
-    if (remainingSec <= 0 && !isTimedOut) softTimeout();
-   } else if (countdownStarted && deadline) {
-    remainingSec = Math.floor((deadline - now) / 1000);
-    if (remainingSec <= 0 && !isTimedOut) softTimeout();
-
-    // ハード期限（7:50）でゲームオーバー
-    const hardDeadline = new Date();
-    hardDeadline.setHours(TARGET_HOUR, HARD_MIN, 0, 0);
-    if (now >= hardDeadline && tasksDone < TOTAL_TASKS) {
-     hardTimeout();
-     return;
+   let remainingSec = 0;
+   if (countdownStarted && endTime) {
+    remainingSec = Math.floor((endTime - now) / 1000);
+    if (remainingSec <= 0 && !isFinished && tasksDone < TOTAL_TASKS) {
+     checkFinish(false); return;
     }
-   } else {
-    timerEl.textContent = '🍚 ごはんを たべよう！';
-    timerEl.style.color = '#94a3b8';
-    timerEl.style.fontSize = '1.2rem';
+    const sec = Math.max(remainingSec, 0);
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    timerEl.textContent = `あと ${m}:${s.toString().padStart(2,'0')}`;
+    timerEl.style.color = sec < 3*60 ? '#dc2626' : '#ef4444';
    }
-
-   if (countdownStarted || isTestMode) {
-    if (isTimedOut && tasksDone < TOTAL_TASKS) {
-     // 延長戦表示
-     const hardDeadline = new Date();
-     hardDeadline.setHours(TARGET_HOUR, HARD_MIN, 0, 0);
-     const extSec = Math.max(Math.floor((hardDeadline - now) / 1000), 0);
-     const em = Math.floor(extSec / 60);
-     const es = extSec % 60;
-     timerEl.textContent = `⏰ のこり ${em}:${es.toString().padStart(2,'0')}`;
-     timerEl.style.color = '#f97316';
-     timerEl.style.fontSize = '1.6rem';
-    } else if (!isTimedOut) {
-     const sec = Math.max(remainingSec, 0);
-     const m = Math.floor(sec / 60);
-     const s = sec % 60;
-     timerEl.textContent = `あと ${m}:${s.toString().padStart(2, '0')}`;
-     timerEl.style.color = sec < 3 * 60 ? '#dc2626' : '#ef4444';
-     timerEl.style.fontSize = '1.8rem';
-    }
-   }
-
    drawRace(remainingSec);
-  }
-
-  function softTimeout() {
-   isTimedOut = true;
-   speak('まだ間に合う！いそいで！');
-  }
-
-  function hardTimeout() {
-   checkFinish(false);
   }
 
   // ── タスクトグル ──────────────────────
   function toggleTask(el) {
-   if (overlay.style.display === 'flex') return;
-
+   if (isFinished || !countdownStarted) return;
    const isDone   = el.classList.toggle('done');
    const textOnly = el.querySelector('.task-text').textContent;
-
-   if (isDone && textOnly === 'あさごはん' && !countdownStarted && !isTestMode) {
-    startCountdown();
-   }
-
    tasksDone = document.querySelectorAll('.task-item.done').length;
-
    if (isDone) speak(textOnly + '、できたね！');
-
    if (tasksDone === TOTAL_TASKS) checkFinish(true);
   }
 
   // ── 結果 ──────────────────────────────
   function checkFinish(isSuccess) {
+   isFinished = true;
    clearInterval(interval);
    overlay.style.display = 'flex';
    if (isSuccess) {
     resEmoji.textContent = '🐇🏆✨';
-    const msg = isTimedOut
-     ? 'セーフ！\nウサギの勝ち！'
-     : 'ミッションコンプリート！\nウサギの勝ち！';
-    resText.textContent = msg;
-    speak(isTimedOut
-     ? 'やったー！間に合った！ウサギの勝ち！最高！'
-     : 'おめでとう！ミッションクリア！ウサギが勝ったよ！');
+    resText.textContent  = 'ミッションクリア！\nウサギの勝ち！';
+    speak('おめでとう！ミッションクリア！ウサギが勝ったよ！');
    } else {
     resEmoji.textContent = '🐢💨😫';
     resText.textContent  = 'カメに\nまけちゃった！\nあしたリベンジだ！';
-    speak('カメに負けちゃった！でも明日もチャレンジしよう！');
+    speak('カメに負けちゃった！でも次はきっと勝てるよ！');
    }
-  }
-
-  // ── 練習モード ────────────────────────
-  function startTest() {
-   isTestMode = true;
-   countdownStarted = true;
-   testBtnContainer.style.display = 'none';
-   testEndTime = new Date(new Date().getTime() + MAX_SECONDS * 1000);
-   speak('練習モード、スタート！');
   }
 
   // ── 音声 ──────────────────────────────
   function speak(text) {
    const uttr = new SpeechSynthesisUtterance(text);
-   uttr.lang = 'ja-JP';
-   uttr.rate = 1.2;
+   uttr.lang = 'ja-JP'; uttr.rate = 1.2;
    window.speechSynthesis.cancel();
    window.speechSynthesis.speak(uttr);
   }
@@ -479,5 +321,4 @@
   update();
  </script>
 </body>
-
 </html>
