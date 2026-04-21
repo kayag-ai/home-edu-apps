@@ -210,7 +210,7 @@
 <!-- タイマー＋おたすけ -->
 <div id="timer-display"></div>
 <div id="help-area">
-  <button id="help-btn" onclick="toggleHelp()">🆘 わからない！ さくせん会議！</button>
+  <button id="help-btn" onclick="toggleHelp()">🆘 わからない！ さくせん かいぎ！</button>
   <div id="help-label">おしたら タイマー とまるよ</div>
 </div>
 
@@ -382,6 +382,23 @@ function drawScene(remainSec) {
     fade.addColorStop(1, 'rgba(99,102,241,0.0)');
     ctx.fillStyle = fade;
     ctx.fillRect(nightLeft - 8, 0, 26, H);
+
+    // ── 星（夜が深まるほど増える）──
+    const nightWidth  = W - nightLeft;
+    const maxStars    = 24;
+    const starCount   = Math.floor(maxStars * timeRatio);
+    const starTypes   = ['⭐','✨','🌟'];
+    // シード固定の疑似乱数で座標を決める（毎フレーム揺れない）
+    for (let i = 0; i < starCount; i++) {
+      const seed = i * 137.508; // 黄金角ベースで散らす
+      const sx = nightLeft + ((seed * 73.1) % nightWidth);
+      const sy = ((seed * 41.7) % (ground * 0.85)) + ground * 0.05;
+      ctx.globalAlpha = 0.85;
+      ctx.font = i % 5 === 0 ? '14px serif' : '10px serif'; // たまに大きい星
+      ctx.textAlign = 'center';
+      ctx.fillText(starTypes[i % starTypes.length], sx, sy);
+    }
+    ctx.globalAlpha = 1;
   }
 
   // ── 太陽（昼エリア左上に固定）──
@@ -475,13 +492,9 @@ function update() {
 
   const remainSec = Math.floor((endTime - Date.now()) / 1000);
   if (remainSec <= 0 && !isFinished) {
-    // 夜が左端到達 → あおむしが昼エリアにいれば成功
-    const tr        = 1;
-    const W         = canvas.width;
-    const wormX     = (W - 38) - ((W - 38) - 38) * Math.min(tr * 0.75 + (tasksDone / TOTAL_TASKS) * 0.25, 1);
-    const nightLeft = 0; // 夜が全面
-    const inDaylight = tasksDone >= TOTAL_TASKS && wormX < 80; // 太陽エリア付近まで到達
-    checkFinish(inDaylight);
+    const W      = canvas.width;
+    const wormX  = (W - 38) - ((W - 38) - 38) * Math.min(0.75 + (tasksDone / TOTAL_TASKS) * 0.25, 1);
+    checkFinish(tasksDone >= TOTAL_TASKS && wormX <= 80);
     return;
   }
 
@@ -507,7 +520,7 @@ function checkFinish(success) {
     speak('やったー！チョウチョになったよ！ありがとう！');
     launchPetals();
   } else {
-    resEmoji.textContent = '🐛💤';
+    resEmoji.textContent = '💤🐛';
     resTitle.textContent = 'あおむし\nおねむ…';
     resMsg.textContent   = 'あ〜、時間ぎれ！\nもう一回がんばろう！\n\nあきらめないで 💗';
     speak('あおむしがおねむになっちゃった。もう一回チャレンジしよう！');
@@ -516,7 +529,7 @@ function checkFinish(success) {
 
 // ── 花びらエフェクト ──────────────────────
 function launchPetals() {
-  const petals = ['🌸','🌼','🌷','🦋','✨','⭐'];
+  const petals = ['🌸','🌼','🫒','🏵️','✨','⭐'];
   for (let i = 0; i < 18; i++) {
     setTimeout(() => {
       const el = document.createElement('div');
