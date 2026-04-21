@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>あおむしの しゅくだいタイマー</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap');
+
+  :root {
+    --pink:    #f9a8d4;
+    --pink2:   #fbcfe8;
+    --green:   #86efac;
+    --green2:  #bbf7d0;
+    --lavender:#c4b5fd;
+    --lav2:    #ddd6fe;
+    --yellow:  #fde68a;
+    --bg-start:#fdf2f8;
+    --bg-end:  #f0fdf4;
+    --text:    #4a3060;
+    --subtext: #9d6ea8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+    min-height: 100vh;
+    background: linear-gradient(160deg, var(--bg-start) 0%, #f0f9ff 40%, var(--bg-end) 100%);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 16px 12px 40px;
+    overflow-y: auto;
+    touch-action: manipulation;
+  }
+
+  /* ── ヘッダー ── */
+  #header { text-align: center; margin-bottom: 10px; }
+  #main-title {
+    font-size: 1.7rem; font-weight: 900; color: var(--text);
+    text-shadow: 2px 2px 0 white, 3px 3px 0 var(--lavender);
+    line-height: 1.2;
+  }
+  #sub-title { font-size: 0.82rem; color: var(--subtext); font-weight: 700; margin-top: 4px; }
+
+  /* ── タイマー選択 ── */
+  #setup-area {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    margin-bottom: 12px; width: 100%;
+  }
+  #setup-label { font-size: 0.85rem; color: var(--subtext); font-weight: 700; }
+  #time-buttons { display: flex; gap: 8px; }
+  .time-btn {
+    padding: 9px 18px; font-size: 1rem; border-radius: 50px;
+    border: 2.5px solid var(--lavender); background: white; color: var(--text);
+    font-weight: 700; cursor: pointer; font-family: inherit;
+    transition: all 0.15s;
+  }
+  .time-btn.selected {
+    background: var(--lavender); color: white; border-color: #a78bfa;
+    box-shadow: 0 3px 0 #a78bfa;
+  }
+  .time-btn:active { transform: translateY(2px); }
+
+  #start-btn {
+    padding: 10px 28px; font-size: 1.05rem; border-radius: 50px; border: none;
+    background: #d1d5db; color: white; font-weight: 700;
+    cursor: not-allowed; font-family: inherit; margin-top: 4px; transition: all 0.2s;
+  }
+  #start-btn.ready {
+    background: linear-gradient(90deg, var(--pink), var(--lavender));
+    cursor: pointer; box-shadow: 0 4px 0 #c084fc;
+  }
+  #start-btn.ready:active { transform: translateY(2px); box-shadow: 0 2px 0 #c084fc; }
+
+  /* ── タイマー表示 ── */
+  #timer-display {
+    font-size: 1.6rem; font-weight: 900; color: var(--text);
+    display: none; text-align: center; margin-bottom: 4px;
+    letter-spacing: 2px;
+  }
+  #timer-display.warn { color: #ef4444; animation: pulse 0.8s infinite; }
+  @keyframes pulse { 0%,100%{ opacity:1 } 50%{ opacity:0.5 } }
+
+  /* ── おたすけボタン ── */
+  #help-area {
+    display: none; width: 95%; max-width: 400px;
+    text-align: center; margin-bottom: 8px;
+  }
+  #help-btn {
+    width: 100%; padding: 12px; font-size: 1.1rem; font-weight: 900;
+    border-radius: 16px; border: none;
+    background: linear-gradient(135deg, var(--yellow), #fca5a5);
+    color: var(--text); cursor: pointer; font-family: inherit;
+    box-shadow: 0 4px 0 #f59e0b;
+    transition: all 0.15s;
+  }
+  #help-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #f59e0b; }
+  #help-btn.paused {
+    background: linear-gradient(135deg, var(--green), var(--green2));
+    box-shadow: 0 4px 0 #22c55e;
+  }
+  #help-label {
+    font-size: 0.78rem; color: var(--subtext); margin-top: 4px; font-weight: 500;
+  }
+
+  /* ── Canvas ── */
+  #scene-canvas {
+    width: 95%; max-width: 420px; height: 120px; border-radius: 24px;
+    background: white; border: 3px solid var(--pink2);
+    box-shadow: 0 6px 20px rgba(196,181,253,0.25);
+    margin-bottom: 14px; display: block;
+  }
+
+  /* ── タスクカード ── */
+  .task-list {
+    width: 95%; max-width: 420px;
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 12px; padding: 4px;
+  }
+  .task-item {
+    background: white; aspect-ratio: 1 / 1; border-radius: 22px;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; font-size: 1rem; font-weight: 700;
+    box-shadow: 0 5px 0 var(--pink2); cursor: pointer;
+    border: 2.5px solid transparent; transition: all 0.15s;
+    text-align: center; color: var(--text); line-height: 1.3;
+    position: relative; overflow: hidden;
+  }
+  .task-item::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(249,168,212,0.12), rgba(196,181,253,0.12));
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .task-item:hover::before { opacity: 1; }
+  .task-item:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--pink2); }
+  .task-item.done {
+    background: linear-gradient(135deg, #fef9c3, var(--green2));
+    border-color: var(--green); box-shadow: 0 2px 0 var(--green);
+    transform: translateY(3px);
+  }
+  .task-item.done .task-text { text-decoration: line-through; opacity: 0.7; }
+  .task-item.done::after {
+    content: '✅'; position: absolute; top: 6px; right: 8px; font-size: 1rem;
+  }
+  .task-icon { font-size: 2.2rem; margin-bottom: 6px; pointer-events: none; }
+  .task-text { pointer-events: none; font-size: 0.92rem; }
+  .task-sub  { pointer-events: none; font-size: 0.72rem; color: var(--subtext); margin-top: 2px; }
+
+  /* さくせん会議バナー */
+  #strategy-banner {
+    display: none; width: 95%; max-width: 420px;
+    background: linear-gradient(135deg, var(--yellow), #fde68a);
+    border-radius: 16px; padding: 10px 16px; text-align: center;
+    font-size: 0.88rem; font-weight: 700; color: var(--text);
+    box-shadow: 0 4px 0 #f59e0b; margin-bottom: 10px;
+  }
+
+  /* ── 結果オーバーレイ ── */
+  #result-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255,255,255,0.97); display: none; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 20;
+    text-align: center; padding: 20px;
+  }
+  .result-emoji { font-size: 5rem; animation: bounce 0.6s ease infinite alternate; }
+  @keyframes bounce { from{transform:translateY(0)} to{transform:translateY(-12px)} }
+  .result-title {
+    font-size: 2rem; font-weight: 900; margin: 16px 0 8px;
+    color: var(--text); white-space: pre-wrap;
+  }
+  .result-msg { font-size: 1rem; color: var(--subtext); margin-bottom: 24px; white-space: pre-wrap; }
+  #retry-btn {
+    padding: 14px 40px; font-size: 1.3rem; border-radius: 20px; border: none;
+    background: linear-gradient(90deg, var(--pink), var(--lavender));
+    color: white; font-weight: 900; font-family: inherit;
+    box-shadow: 0 5px 0 #c084fc; cursor: pointer;
+  }
+  #retry-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #c084fc; }
+
+  /* 花パーティクル */
+  .petal {
+    position: fixed; top: -40px; pointer-events: none; font-size: 1.4rem;
+    animation: fall linear forwards;
+    z-index: 30;
+  }
+  @keyframes fall {
+    0%   { transform: translateY(-40px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(110vh)  rotate(720deg); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div id="sub-title">🌸 たべたら おおきく なるよ！ 🌸</div>
+  <h1 id="main-title">あおむしの<br>しゅくだいタイマー</h1>
+</div>
+
+<!-- タイマー設定 -->
+<div id="setup-area">
+  <div id="setup-label">⏰ なんぷん やる？</div>
+  <div id="time-buttons">
+    <button class="time-btn" onclick="selectTime(this,15)">15分</button>
+    <button class="time-btn" onclick="selectTime(this,20)">20分</button>
+    <button class="time-btn" onclick="selectTime(this,30)">30分</button>
+  </div>
+  <button id="start-btn" disabled onclick="startSession()">🐛 スタート！</button>
+</div>
+
+<!-- タイマー＋おたすけ -->
+<div id="timer-display"></div>
+<div id="help-area">
+  <button id="help-btn" onclick="toggleHelp()">🆘 わからない！ さくせん会議！</button>
+  <div id="help-label">おしたら タイマー とまるよ</div>
+</div>
+
+<!-- メインシーン -->
+<canvas id="scene-canvas"></canvas>
+
+<!-- タスクカード -->
+<div class="task-list" id="task-list">
+  <div class="task-item" id="task-math" onclick="completeTask(this,'math')">
+    <span class="task-icon">🍐</span>
+    <span class="task-text">さんすう</span>
+    <span class="task-sub">けいさん</span>
+  </div>
+  <div class="task-item" id="task-lang" onclick="completeTask(this,'lang')">
+    <span class="task-icon">🍎</span>
+    <span class="task-text">こくご</span>
+    <span class="task-sub">かんじ</span>
+  </div>
+</div>
+
+<!-- 結果 -->
+<div id="result-overlay">
+  <div class="result-emoji" id="res-emoji"></div>
+  <div class="result-title" id="res-title"></div>
+  <div class="result-msg"   id="res-msg"></div>
+  <button id="retry-btn" onclick="location.reload()">もう一度！</button>
+</div>
+
+<script>
+const TOTAL_TASKS = 2;
+let selectedMins  = null;
+let totalSecs     = 0;
+let endTime       = null;
+let started       = false;
+let isPaused      = false;
+let pausedAt      = null;
+let tasksDone     = 0;
+let isFinished    = false;
+let animFrame     = 0;
+let tickInterval  = null;
+
+const timerEl    = document.getElementById('timer-display');
+const helpArea   = document.getElementById('help-area');
+const helpBtn    = document.getElementById('help-btn');
+const helpLabel  = document.getElementById('help-label');
+const stratBanner= document.getElementById('strategy-banner');
+const overlay    = document.getElementById('result-overlay');
+const resEmoji   = document.getElementById('res-emoji');
+const resTitle   = document.getElementById('res-title');
+const resMsg     = document.getElementById('res-msg');
+const setupArea  = document.getElementById('setup-area');
+const canvas     = document.getElementById('scene-canvas');
+const ctx        = canvas.getContext('2d');
+
+function resizeCanvas(){
+  canvas.width  = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// ── 時間選択 ──────────────────────────────
+function selectTime(btn, mins) {
+  document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedMins = mins;
+  const sb = document.getElementById('start-btn');
+  sb.disabled = false;
+  sb.classList.add('ready');
+}
+
+// ── セッション開始 ────────────────────────
+function startSession() {
+  if (!selectedMins) return;
+  totalSecs = selectedMins * 60;
+  endTime   = new Date(Date.now() + totalSecs * 1000);
+  started   = true;
+  setupArea.style.display  = 'none';
+  timerEl.style.display    = 'block';
+  helpArea.style.display   = 'block';
+  speak(`${selectedMins}分で しゅくだい を やろう！ がんばれ あおむし！`);
+  tickInterval = setInterval(update, 500);
+  update();
+}
+
+// ── おたすけ ──────────────────────────────
+function toggleHelp() {
+  if (!started || isFinished) return;
+  if (!isPaused) {
+    // 一時停止
+    isPaused = true;
+    pausedAt = Date.now();
+    helpBtn.classList.add('paused');
+    helpBtn.textContent = '✅ またはじめる';
+    helpLabel.textContent = 'タイマー とまってるよ。おちついてね 💗';
+    stratBanner.style.display = 'block';
+    speak('さくせん会議ちゅう。タイマーをとめたよ。');
+  } else {
+    // 再開
+    const pausedDuration = Date.now() - pausedAt;
+    endTime = new Date(endTime.getTime() + pausedDuration);
+    isPaused = false;
+    helpBtn.classList.remove('paused');
+    helpBtn.textContent = '🆘 わからない！ さくせん会議！';
+    helpLabel.textContent = 'おしたら タイマー とまるよ';
+    stratBanner.style.display = 'none';
+    speak('さあ、またがんばろう！');
+  }
+}
+
+// ── タスク完了 ────────────────────────────
+function completeTask(el, type) {
+  if (isFinished || !started || el.classList.contains('done')) return;
+  el.classList.add('done');
+  tasksDone++;
+  const name = type === 'math' ? 'さんすうドリル' : 'こくごドリル';
+  const icon = type === 'math' ? '🍐' : '🍎';
+  if (tasksDone >= TOTAL_TASKS) {
+    setTimeout(() => checkFinish(true), 600);
+  }
+}
+
+// ── シーン描画（夜は右から侵食・あおむし右→左） ──
+function drawScene(remainSec) {
+  const W = canvas.width;
+  const H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const ground = H * 0.68;
+
+  // 時間経過率（0=スタート直後, 1=タイムアップ）
+  const elapsed   = totalSecs - Math.max(remainSec, 0);
+  const timeRatio = started ? Math.min(elapsed / totalSecs, 1) : 0;
+
+  // 夜エリアの左端X：右端Wから左に広がる（スタート前=W=夜なし, タイムアップ=0=全夜）
+  const nightLeft = W - W * timeRatio;
+
+  // ── 昼エリア（全面に先に描く）──
+  const sky = ctx.createLinearGradient(0, 0, 0, ground);
+  sky.addColorStop(0, '#bae6fd');
+  sky.addColorStop(1, '#d1fae5');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, ground);
+
+  const grass = ctx.createLinearGradient(0, ground, 0, H);
+  grass.addColorStop(0, '#86efac');
+  grass.addColorStop(1, '#bbf7d0');
+  ctx.fillStyle = grass;
+  ctx.fillRect(0, ground, W, H - ground);
+
+  // ── 夜エリア（nightLeftから右端まで上書き）──
+  if (nightLeft < W) {
+    const nightSky = ctx.createLinearGradient(0, 0, 0, ground);
+    nightSky.addColorStop(0, '#1e1b4b');
+    nightSky.addColorStop(1, '#3730a3');
+    ctx.fillStyle = nightSky;
+    ctx.fillRect(nightLeft, 0, W - nightLeft, ground);
+
+    const nightGrass = ctx.createLinearGradient(0, ground, 0, H);
+    nightGrass.addColorStop(0, '#4338ca');
+    nightGrass.addColorStop(1, '#3730a3');
+    ctx.fillStyle = nightGrass;
+    ctx.fillRect(nightLeft, ground, W - nightLeft, H - ground);
+
+    // 境界線グラデーション
+    const fade = ctx.createLinearGradient(nightLeft - 8, 0, nightLeft + 18, 0);
+    fade.addColorStop(0, 'rgba(99,102,241,0.0)');
+    fade.addColorStop(0.5, 'rgba(99,102,241,0.35)');
+    fade.addColorStop(1, 'rgba(99,102,241,0.0)');
+    ctx.fillStyle = fade;
+    ctx.fillRect(nightLeft - 8, 0, 26, H);
+  }
+
+  // ── 太陽（昼エリア左上に固定）──
+  const sunX = 28;
+  const sunY = H * 0.2 + Math.sin(animFrame * 0.04) * 3;
+  if (sunX < nightLeft - 10) {
+    const sunGlow = ctx.createRadialGradient(sunX, sunY, 6, sunX, sunY, 26);
+    sunGlow.addColorStop(0, 'rgba(253,224,71,0.9)');
+    sunGlow.addColorStop(1, 'rgba(253,224,71,0)');
+    ctx.fillStyle = sunGlow;
+    ctx.beginPath(); ctx.arc(sunX, sunY, 26, 0, Math.PI * 2); ctx.fill();
+    ctx.font = '22px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('☀️', sunX, sunY + 8);
+  }
+
+  // ── おやつ（昼エリアのみ）──
+  const snacks = ['🍭','🍊','🍫','🍇','🍰'];
+  snacks.forEach((f, i) => {
+    const fx = 18 + i * (W - 36) / (snacks.length - 1);
+    if (fx < nightLeft - 10) {
+      ctx.font = '15px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(f, fx, ground + 8);
+    }
+  });
+
+  // ── あおむし（時間75%+タスクボーナス25%で右→左）──
+  const wormStartX = W - 38;
+  const wormEndX   = 38;
+  const timeMove   = timeRatio * 0.75;
+  const taskBonus  = (tasksDone / TOTAL_TASKS) * 0.25;
+  const wormRatio  = started ? Math.min(timeMove + taskBonus, 1) : 0;
+  const wormX      = wormStartX - (wormStartX - wormEndX) * wormRatio;
+  const wormY      = ground - 14;
+  const wormBob    = Math.sin(animFrame * 0.3) * 3;
+
+  let wormEmoji = '🐛';
+  if (isFinished && tasksDone >= TOTAL_TASKS) wormEmoji = '🦋';
+  else if (tasksDone >= 1) wormEmoji = '🥐';
+
+  ctx.font = '26px serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(wormEmoji, wormX, wormY + wormBob);
+
+  // ── 吹き出し ──
+  if (started && remainSec > 0 && !isPaused) {
+    const nightClose = wormX > nightLeft - 70;
+    const msg      = nightClose ? ' いそごう！' : '大きくなった！';
+    const msgColor = nightClose ? '#ef4444' : '#7c3aed';
+    ctx.font = 'bold 11px sans-serif';
+    const mw = ctx.measureText(msg).width;
+    const bx = Math.min(wormX - mw / 2, W - mw - 12);
+    const by = wormY - 60 + wormBob;
+    roundRect(ctx, bx, by, mw + 16, 20, 8, 'white', nightClose ? '#ef4444' : '#c4b5fd');
+    ctx.fillStyle = msgColor;
+    ctx.textAlign = 'left';
+    ctx.fillText(msg, bx + 8, by + 14);
+  }
+
+  // ── さくせん会議中 ──
+  if (isPaused) {
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillStyle = '#f59e0b';
+    ctx.textAlign = 'center';
+    ctx.fillText('📋 さくせん会議ちゅう…', W / 2, H * 0.38);
+  }
+
+  animFrame++;
+}
+
+function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y); ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+  if (fill)   { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 2; ctx.stroke(); }
+}
+
+// ── メインループ ──────────────────────────
+function update() {
+  if (!started) { drawScene(0); return; }
+  if (isPaused) { drawScene(Math.ceil((endTime - Date.now()) / 1000)); return; }
+
+  const remainSec = Math.floor((endTime - Date.now()) / 1000);
+  if (remainSec <= 0 && !isFinished) {
+    // 夜が左端到達 → あおむしが昼エリアにいれば成功
+    const tr        = 1;
+    const W         = canvas.width;
+    const wormX     = (W - 38) - ((W - 38) - 38) * Math.min(tr * 0.75 + (tasksDone / TOTAL_TASKS) * 0.25, 1);
+    const nightLeft = 0; // 夜が全面
+    const inDaylight = tasksDone >= TOTAL_TASKS && wormX < 80; // 太陽エリア付近まで到達
+    checkFinish(inDaylight);
+    return;
+  }
+
+  const sec = Math.max(remainSec, 0);
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  timerEl.textContent = `⏱ あと ${m}:${String(s).padStart(2,'0')}`;
+  timerEl.className   = sec < 2*60 ? 'warn' : '';
+
+  drawScene(sec);
+}
+
+// ── 結果 ──────────────────────────────────
+function checkFinish(success) {
+  isFinished = true;
+  clearInterval(tickInterval);
+  overlay.style.display = 'flex';
+
+  if (success) {
+    resEmoji.textContent = '🦋';
+    resTitle.textContent = 'チョウチョに\nなれたよ！！';
+    resMsg.textContent   = 'しゅくだい ぜんぶ できた！\nすごい！ えらい！ さいこう！✨';
+    speak('やったー！チョウチョになったよ！ありがとう！');
+    launchPetals();
+  } else {
+    resEmoji.textContent = '🐛💤';
+    resTitle.textContent = 'あおむし\nおねむ…';
+    resMsg.textContent   = 'あ〜、時間ぎれ！\nもう一回がんばろう！\n\nあきらめないで 💗';
+    speak('あおむしがおねむになっちゃった。もう一回チャレンジしよう！');
+  }
+}
+
+// ── 花びらエフェクト ──────────────────────
+function launchPetals() {
+  const petals = ['🌸','🌼','🌷','🦋','✨','⭐'];
+  for (let i = 0; i < 18; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'petal';
+      el.textContent = petals[Math.floor(Math.random() * petals.length)];
+      el.style.left = Math.random() * 95 + 'vw';
+      el.style.animationDuration = (2 + Math.random() * 3) + 's';
+      el.style.animationDelay    = '0s';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 5500);
+    }, i * 180);
+  }
+}
+
+// ── 音声 ──────────────────────────────────
+function speak(text) {
+  if (!window.speechSynthesis) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ja-JP'; u.rate = 1.1; u.pitch = 1.2;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(u);
+}
+
+// 初期描画
+drawScene(0);
+setInterval(() => { if (!started) drawScene(0); }, 800);
+</script>
+</body>
+</html>
