@@ -14,10 +14,50 @@
    min-height: 100vh;
    margin: 0;
    padding: 20px 0;
-   background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+   background: linear-gradient(160deg, #fffbeb 0%, #fef3c7 100%);
+   transition: background 4s ease;
    touch-action: manipulation;
    overflow-y: auto;
   }
+  /* ── やり直し確認オーバーレイ ── */
+  #reset-overlay {
+   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+   background: rgba(0,0,0,0.55); display: none; flex-direction: column;
+   align-items: center; justify-content: center; z-index: 30;
+  }
+  #reset-dialog {
+   background: white; border-radius: 24px; padding: 28px 24px;
+   text-align: center; width: 80%; max-width: 320px;
+   box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+  }
+  #reset-dialog p {
+   font-size: 1.2rem; font-weight: bold; color: #1e293b;
+   margin: 0 0 8px; line-height: 1.5;
+  }
+  #reset-dialog small {
+   font-size: 0.82rem; color: #94a3b8;
+  }
+  #reset-dialog .btn-row {
+   display: flex; gap: 12px; margin-top: 20px; justify-content: center;
+  }
+  #reset-yes {
+   padding: 12px 28px; font-size: 1rem; border-radius: 50px; border: none;
+   background: #ef4444; color: white; font-weight: bold; cursor: pointer;
+   box-shadow: 0 3px #dc2626;
+  }
+  #reset-yes:active { transform: translateY(2px); box-shadow: 0 1px #dc2626; }
+  #reset-no {
+   padding: 12px 28px; font-size: 1rem; border-radius: 50px; border: none;
+   background: #e2e8f0; color: #475569; font-weight: bold; cursor: pointer;
+  }
+  /* ── やり直しボタン（スタート後に表示） ── */
+  #reset-btn {
+   display: none; margin-top: 10px;
+   padding: 7px 18px; font-size: 0.82rem; border-radius: 50px;
+   border: 2px solid #cbd5e1; background: white; color: #94a3b8;
+   font-weight: bold; cursor: pointer;
+  }
+  #reset-btn:active { background: #f1f5f9; }
   #header { text-align: center; margin-bottom: 10px; }
   #main-title {
    font-size: 2rem; font-weight: 900; color: #c2410c;
@@ -64,7 +104,7 @@
   #start-btn.ready:active { transform: translateY(2px); box-shadow: 0 1px #ea580c; }
   #race-canvas {
    width: 90%; max-width: 400px; height: 110px; border-radius: 20px;
-   background: white; border: 3px solid #fff;
+   border: 3px solid #fff;
    box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 16px; display: block;
   }
   .task-list {
@@ -89,7 +129,7 @@
   #result-overlay {
    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
    background: rgba(255,255,255,0.98); display: none; flex-direction: column;
-   align-items: center; justify-content: center; z-index: 10; text-align: center;
+   align-items: center; justify-content: center; z-index: 5; text-align: center;
   }
   .result-emoji { font-size: 6rem; }
   .result-text {
@@ -99,6 +139,10 @@
   #retry-btn {
    padding: 15px 45px; font-size: 1.6rem; border-radius: 20px; border: none;
    background: #f97316; color: white; box-shadow: 0 6px #ea580c; font-weight: bold;
+  }
+  #res-surplus {
+   font-size: 1.1rem; font-weight: bold; color: #16a34a;
+   margin: -10px 0 18px; min-height: 1.5em;
   }
  </style>
 </head>
@@ -125,19 +169,34 @@
   <button id="start-btn" onclick="startMission()" disabled>🚀 スタート！</button>
  </div>
 
+ <button id="reset-btn" onclick="openReset('reset')">↩ やりなおす</button>
+
  <canvas id="race-canvas"></canvas>
 
  <div class="task-list" id="task-list">
   <div class="task-item" onclick="toggleTask(this)"><span class="task-icon">🍚</span><span class="task-text">あさごはん</span></div>
-  <div class="task-item" onclick="toggleTask(this)"><span class="task-icon">🚽</span><span class="task-text">トイレ</span></div>
-  <div class="task-item" onclick="toggleTask(this)"><span class="task-icon">🪥</span><span class="task-text">はみがき</span></div>
-  <div class="task-item" onclick="toggleTask(this)"><span class="task-icon">👕</span><span class="task-text">きがえ</span></div>
+  <div class="task-item" onclick="toggleTask(this)"><span class="task-icon">🚽</span><span class="task-text">トイレ<br>（5分）</span></div>
+  <div class="task-item" onclick="toggleTask(this)"><span class="task-icon">🪥</span><span class="task-text">はみがき<br>（5分）</span></div>
+  <div class="task-item" onclick="toggleTask(this)"><span class="task-icon">👕</span><span class="task-text">きがえ<br>（5分）</span></div>
+ </div>
+
+ <!-- やり直し確認オーバーレイ -->
+ <div id="reset-overlay">
+  <div id="reset-dialog">
+   <p>🔄 やりなおす？</p>
+   <small>いままでの きろくは きえるよ</small>
+   <div class="btn-row">
+    <button id="reset-yes" onclick="confirmReset()">やりなおす</button>
+    <button id="reset-no"  onclick="cancelReset()">やめとく</button>
+   </div>
+  </div>
  </div>
 
  <div id="result-overlay">
   <div class="result-emoji" id="res-emoji"></div>
   <div class="result-text" id="res-text"></div>
-  <button id="retry-btn" onclick="location.reload()">おわり</button>
+  <div id="res-surplus"></div>
+  <button id="retry-btn">おわり</button>
  </div>
 
  <script>
@@ -164,6 +223,70 @@
   const canvas = document.getElementById('race-canvas');
   const ctx    = canvas.getContext('2d');
 
+  // ── localStorage（日付キー） ──────────
+  function todayKey() {
+   const d = new Date();
+   return `morning_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function saveState() {
+   const doneIds = [...document.querySelectorAll('.task-item.done')]
+    .map(el => [...document.querySelectorAll('.task-item')].indexOf(el));
+   localStorage.setItem(todayKey(), JSON.stringify({
+    selectedMealMins, endTime: endTime ? endTime.getTime() : null,
+    totalSeconds, rabbitStartBonus, doneIds, isFinished
+   }));
+  }
+  function loadState() {
+   // 前日以前のキーを削除
+   Object.keys(localStorage).filter(k => k.startsWith('morning_') && k !== todayKey())
+    .forEach(k => localStorage.removeItem(k));
+   const raw = localStorage.getItem(todayKey());
+   if (!raw) return;
+   const s = JSON.parse(raw);
+   if (!s.endTime || s.isFinished) return; // 終了済み or 不正はスキップ
+   // 状態を復元
+   selectedMealMins  = s.selectedMealMins;
+   totalSeconds      = s.totalSeconds;
+   rabbitStartBonus  = s.rabbitStartBonus;
+   endTime           = new Date(s.endTime);
+   countdownStarted  = true;
+   mealSelect.style.display = 'none';
+   timerEl.style.display    = 'block';
+   document.getElementById('reset-btn').style.display = 'inline-block';
+   // タスクのdone状態を復元
+   const items = document.querySelectorAll('.task-item');
+   s.doneIds.forEach(i => { if (items[i]) items[i].classList.add('done'); });
+   tasksDone = s.doneIds.length;
+  }
+
+  // ── 時間帯グラデーション ──────────────
+  function updateBg() {
+   const h = new Date().getHours();
+   const m = new Date().getMinutes();
+   const t = h + m / 60; // 0〜24の小数
+   let grad;
+   if (t < 5) {
+    // 深夜〜夜明け前
+    grad = 'linear-gradient(160deg, #0f172a 0%, #1e1b4b 100%)';
+   } else if (t < 6) {
+    // 夜明け（4:30〜6:00）
+    grad = 'linear-gradient(160deg, #1e1b4b 0%, #7c3aed 40%, #f97316 100%)';
+   } else if (t < 7) {
+    // 早朝オレンジ
+    grad = 'linear-gradient(160deg, #fed7aa 0%, #fbbf24 50%, #fef3c7 100%)';
+   } else if (t < 8) {
+    // 朝（〜8時）明るいオレンジ→黄
+    grad = 'linear-gradient(160deg, #ffedd5 0%, #fef9c3 60%, #fffbeb 100%)';
+   } else if (t < 9) {
+    // 朝（8〜9時）黄色→水色
+    grad = 'linear-gradient(160deg, #fef9c3 0%, #e0f2fe 100%)';
+   } else {
+    // 9時以降
+    grad = 'linear-gradient(160deg, #e0f2fe 0%, #f0fdf4 100%)';
+   }
+   document.body.style.background = grad;
+  }
+
   function resizeCanvas() {
    canvas.width  = canvas.offsetWidth;
    canvas.height = canvas.offsetHeight;
@@ -189,6 +312,8 @@
    countdownStarted = true;
    mealSelect.style.display = 'none';
    timerEl.style.display = 'block';
+   document.getElementById('reset-btn').style.display = 'inline-block';
+   saveState();
    speak(`${selectedMealMins}分でごはん、そのあと支度だね。カメに負けないように出発！`);
   }
 
@@ -197,11 +322,25 @@
    const W = canvas.width;
    const H = canvas.height;
    ctx.clearRect(0, 0, W, H);
-   ctx.fillStyle = 'white';
-   ctx.fillRect(0, 0, W, H);
 
    const ground = H * 0.62;
-   ctx.strokeStyle = '#d97706';
+
+   // 空（水色グラデーション）
+   const skyGrad = ctx.createLinearGradient(0, 0, 0, ground);
+   skyGrad.addColorStop(0, '#bae6fd');
+   skyGrad.addColorStop(1, '#e0f2fe');
+   ctx.fillStyle = skyGrad;
+   ctx.fillRect(0, 0, W, ground);
+
+   // 地面（緑グラデーション）
+   const groundGrad = ctx.createLinearGradient(0, ground, 0, H);
+   groundGrad.addColorStop(0, '#86efac');
+   groundGrad.addColorStop(1, '#4ade80');
+   ctx.fillStyle = groundGrad;
+   ctx.fillRect(0, ground, W, H - ground);
+
+   // 地平線
+   ctx.strokeStyle = '#16a34a';
    ctx.lineWidth = 2;
    ctx.beginPath(); ctx.moveTo(0, ground); ctx.lineTo(W, ground); ctx.stroke();
 
@@ -267,6 +406,7 @@
   function update() {
    const now = new Date();
    clockEl.textContent = now.toLocaleTimeString('ja-JP', { hour12: false });
+   updateBg();
 
    let remainingSec = 0;
    if (countdownStarted && endTime) {
@@ -289,6 +429,7 @@
    const isDone   = el.classList.toggle('done');
    const textOnly = el.querySelector('.task-text').textContent;
    tasksDone = document.querySelectorAll('.task-item.done').length;
+   saveState();
    if (isDone) speak(textOnly + '、できたね！');
    if (tasksDone === TOTAL_TASKS) checkFinish(true);
   }
@@ -298,15 +439,49 @@
    isFinished = true;
    clearInterval(interval);
    overlay.style.display = 'flex';
+   const retryBtn  = document.getElementById('retry-btn');
+   const surplusEl = document.getElementById('res-surplus');
    if (isSuccess) {
-    resEmoji.textContent = '🐇🏆✨';
-    resText.textContent  = 'ミッションクリア！\nウサギの勝ち！';
-    speak('おめでとう！ミッションクリア！ウサギが勝ったよ！');
+    const surplus = Math.max(Math.floor((endTime - Date.now()) / 1000), 0);
+    const sm = Math.floor(surplus / 60);
+    const ss = surplus % 60;
+    surplusEl.textContent = ss > 0
+     ? `⏱ ${sm}分${ss}秒 はやかった！`
+     : `⏱ ${sm}分 はやかった！`;
+    resEmoji.textContent  = '🐇🏆✨';
+    resText.textContent   = 'ミッションクリア！\nウサギの勝ち！';
+    retryBtn.textContent  = 'おわり';
+    retryBtn.onclick      = () => openReset('finish');
+    speak(`おめでとう！${sm}分はやくできたよ！ウサギの勝ち！`);
    } else {
-    resEmoji.textContent = '🐢💨😫';
-    resText.textContent  = 'カメに\nまけちゃった！\nあしたリベンジだ！';
+    surplusEl.textContent = '';
+    resEmoji.textContent  = '🐢💨😫';
+    resText.textContent   = 'カメに\nまけちゃった！\nあしたリベンジだ！';
+    retryBtn.textContent  = 'もう一回！';
+    retryBtn.onclick      = () => { localStorage.removeItem(todayKey()); location.reload(); };
     speak('カメに負けちゃった！でも次はきっと勝てるよ！');
    }
+  }
+
+  // ── やり直し ──────────────────────────
+  function openReset(mode) {
+   if (mode === 'finish') {
+    document.querySelector('#reset-dialog p').textContent    = '⭐ ほんとうにおわる？';
+    document.querySelector('#reset-dialog small').textContent = 'きろくはきえるよ';
+    document.getElementById('reset-yes').textContent          = 'おわる';
+   } else {
+    document.querySelector('#reset-dialog p').textContent    = '🔄 やりなおす？';
+    document.querySelector('#reset-dialog small').textContent = 'いままでの きろくは きえるよ';
+    document.getElementById('reset-yes').textContent          = 'やりなおす';
+   }
+   document.getElementById('reset-overlay').style.display = 'flex';
+  }
+  function cancelReset() {
+   document.getElementById('reset-overlay').style.display = 'none';
+  }
+  function confirmReset() {
+   localStorage.removeItem(todayKey());
+   location.reload();
   }
 
   // ── 音声 ──────────────────────────────
@@ -317,6 +492,7 @@
    window.speechSynthesis.speak(uttr);
   }
 
+  loadState();
   const interval = setInterval(update, 1000);
   update();
  </script>
