@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cm・mm れんしゅう</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+
+  :root {
+    --bg: #fdf6ec;
+    --primary: #f4845f;
+    --secondary: #5ba4cf;
+    --accent: #f9c74f;
+    --correct: #43aa8b;
+    --wrong: #e63946;
+    --text: #2d2d2d;
+    --card: #ffffff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 48px;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--primary);
+    margin-bottom: 4px;
+    letter-spacing: 0.02em;
+  }
+
+  .subtitle {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 24px;
+  }
+
+  .score-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+
+  .score-item {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 8px 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  }
+
+  .score-item span { color: var(--primary); }
+
+  .card {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 28px 24px 24px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.09);
+    margin-bottom: 20px;
+  }
+
+  .question-type {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--secondary);
+    margin-bottom: 12px;
+  }
+
+  .question {
+    font-size: 1.5rem;
+    font-weight: 900;
+    margin-bottom: 24px;
+    line-height: 1.4;
+  }
+
+  .question .num {
+    color: var(--primary);
+    font-size: 2rem;
+  }
+
+  .answer-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    flex-wrap: wrap;
+  }
+
+  .answer-row input {
+    width: 72px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 900;
+    text-align: center;
+    border: 3px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 8px 4px;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    background: #fafafa;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .answer-row input:focus {
+    border-color: var(--secondary);
+    background: #fff;
+  }
+
+  .answer-row input.correct {
+    border-color: var(--correct);
+    background: #eafaf4;
+  }
+
+  .answer-row input.wrong {
+    border-color: var(--wrong);
+    background: #fdecea;
+  }
+
+  .unit {
+    color: #555;
+    font-size: 1.1rem;
+  }
+
+  .btn {
+    display: block;
+    width: 100%;
+    max-width: 420px;
+    padding: 14px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 900;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.1s;
+  }
+
+  .btn:active { transform: scale(0.97); }
+
+  .btn-check {
+    background: var(--primary);
+    color: white;
+    margin-bottom: 12px;
+  }
+
+  .btn-next {
+    background: var(--secondary);
+    color: white;
+    display: none;
+  }
+
+  .feedback {
+    margin-top: 16px;
+    font-size: 1rem;
+    font-weight: 700;
+    min-height: 28px;
+    text-align: center;
+  }
+
+  .feedback.correct { color: var(--correct); }
+  .feedback.wrong { color: var(--wrong); }
+
+  .ruler {
+    width: 100%;
+    height: 44px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: visible;
+  }
+
+  .ruler svg { width: 100%; height: 100%; }
+
+  @keyframes pop {
+    0% { transform: scale(0.8); opacity: 0; }
+    60% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .feedback.show { animation: pop 0.25s ease forwards; }
+
+  .progress {
+    font-size: 0.8rem;
+    color: #aaa;
+    margin-bottom: 8px;
+    width: 100%;
+    max-width: 420px;
+    text-align: right;
+  }
+
+  .progress-bar-wrap {
+    width: 100%;
+    max-width: 420px;
+    height: 6px;
+    background: #e8e8e8;
+    border-radius: 99px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 99px;
+    transition: width 0.4s ease;
+  }
+
+  .finish-card {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 36px 24px;
+    text-align: center;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.09);
+    display: none;
+  }
+
+  .finish-card h2 {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--primary);
+    margin-bottom: 12px;
+  }
+
+  .finish-card .result-num {
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--secondary);
+    margin: 8px 0 20px;
+  }
+
+  .btn-restart {
+    background: var(--accent);
+    color: var(--text);
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<h1>📏 cm・mm れんしゅう</h1>
+<p class="subtitle">こたえをかいてみよう！</p>
+
+<div class="score-bar">
+  <div class="score-item">せいかい <span id="correct-count">0</span></div>
+  <div class="score-item">もんだい <span id="total-count">0</span></div>
+</div>
+
+<div class="progress" id="progress-text">1 / 10</div>
+<div class="progress-bar-wrap">
+  <div class="progress-bar-fill" id="progress-bar" style="width:0%"></div>
+</div>
+
+<div class="card" id="question-card">
+  <div class="question-type" id="q-type"></div>
+  <div class="question" id="q-text"></div>
+  <div class="answer-row" id="answer-row"></div>
+  <div class="feedback" id="feedback"></div>
+</div>
+
+<button class="btn btn-check" id="btn-check" onclick="checkAnswer()">こたえあわせ</button>
+<button class="btn btn-next" id="btn-next" onclick="nextQuestion()">つぎのもんだい →</button>
+
+<div class="finish-card" id="finish-card">
+  <h2>🎉 おわったよ！</h2>
+  <div>せいかい</div>
+  <div class="result-num"><span id="final-correct">0</span> / <span id="final-total">10</span></div>
+  <button class="btn btn-restart" onclick="startDrill()">もういちど！</button>
+</div>
+
+<script>
+const TOTAL = 10;
+let currentQ = 0;
+let correctCount = 0;
+let questions = [];
+
+// 問題生成
+function generateQuestions(n) {
+  const qs = [];
+  for (let i = 0; i < n; i++) {
+    const type = Math.random() < 0.5 ? 'mm_to_cm' : 'cm_to_mm';
+    if (type === 'mm_to_cm') {
+      // mm → cm□mm
+      const mm = Math.floor(Math.random() * 120) + 11; // 11〜130
+      const cm = Math.floor(mm / 10);
+      const rmm = mm % 10;
+      qs.push({ type, given: mm, ans_cm: cm, ans_mm: rmm });
+    } else {
+      // cm□mm → mm
+      const cm = Math.floor(Math.random() * 13) + 1; // 1〜13
+      const rmm = Math.floor(Math.random() * 10); // 0〜9
+      const mm = cm * 10 + rmm;
+      qs.push({ type, given_cm: cm, given_mm: rmm, ans_mm: mm });
+    }
+  }
+  return qs;
+}
+
+function renderQuestion(q) {
+  const qType = document.getElementById('q-type');
+  const qText = document.getElementById('q-text');
+  const ansRow = document.getElementById('answer-row');
+  const feedback = document.getElementById('feedback');
+  feedback.textContent = '';
+  feedback.className = 'feedback';
+
+  if (q.type === 'mm_to_cm') {
+    qType.textContent = 'mm → cm と mm に なおそう';
+    qText.innerHTML = `<span class="num">${q.given}</span> mm は`;
+    ansRow.innerHTML = `
+      <input type="number" id="inp-cm" min="0" max="99" placeholder="?" inputmode="numeric">
+      <span class="unit">cm</span>
+      <input type="number" id="inp-mm" min="0" max="9" placeholder="?" inputmode="numeric">
+      <span class="unit">mm</span>
+    `;
+  } else {
+    qType.textContent = 'cm と mm → mm に なおそう';
+    qText.innerHTML = `<span class="num">${q.given_cm}</span> cm <span class="num">${q.given_mm}</span> mm は`;
+    ansRow.innerHTML = `
+      <input type="number" id="inp-mm" min="0" max="999" placeholder="?" inputmode="numeric">
+      <span class="unit">mm</span>
+    `;
+  }
+
+  // Enterで答え合わせ
+  ansRow.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') checkAnswer();
+    });
+  });
+
+  // 最初の入力にフォーカス
+  setTimeout(() => {
+    const first = ansRow.querySelector('input');
+    if (first) first.focus();
+  }, 50);
+}
+
+function checkAnswer() {
+  const q = questions[currentQ];
+  const feedback = document.getElementById('feedback');
+  let allCorrect = true;
+
+  if (q.type === 'mm_to_cm') {
+    const inpCm = document.getElementById('inp-cm');
+    const inpMm = document.getElementById('inp-mm');
+    const valCm = parseInt(inpCm.value);
+    const valMm = parseInt(inpMm.value);
+
+    const okCm = valCm === q.ans_cm;
+    const okMm = valMm === q.ans_mm;
+
+    inpCm.className = okCm ? 'correct' : 'wrong';
+    inpMm.className = okMm ? 'correct' : 'wrong';
+    allCorrect = okCm && okMm;
+
+    if (!allCorrect) {
+      feedback.textContent = `こたえは ${q.ans_cm} cm ${q.ans_mm} mm だよ`;
+    }
+  } else {
+    const inpMm = document.getElementById('inp-mm');
+    const valMm = parseInt(inpMm.value);
+    const ok = valMm === q.ans_mm;
+    inpMm.className = ok ? 'correct' : 'wrong';
+    allCorrect = ok;
+    if (!allCorrect) {
+      feedback.textContent = `こたえは ${q.ans_mm} mm だよ`;
+    }
+  }
+
+  if (allCorrect) {
+    feedback.textContent = '⭕️ せいかい！';
+    feedback.className = 'feedback correct show';
+    correctCount++;
+    document.getElementById('correct-count').textContent = correctCount;
+  } else {
+    feedback.className = 'feedback wrong show';
+  }
+
+  document.getElementById('total-count').textContent = currentQ + 1;
+  document.getElementById('btn-check').style.display = 'none';
+  document.getElementById('btn-next').style.display = 'block';
+}
+
+function nextQuestion() {
+  currentQ++;
+  if (currentQ >= TOTAL) {
+    showFinish();
+    return;
+  }
+  updateProgress();
+  renderQuestion(questions[currentQ]);
+  document.getElementById('btn-check').style.display = 'block';
+  document.getElementById('btn-next').style.display = 'none';
+}
+
+function updateProgress() {
+  document.getElementById('progress-text').textContent = `${currentQ + 1} / ${TOTAL}`;
+  document.getElementById('progress-bar').style.width = `${(currentQ / TOTAL) * 100}%`;
+}
+
+function showFinish() {
+  document.getElementById('question-card').style.display = 'none';
+  document.getElementById('btn-check').style.display = 'none';
+  document.getElementById('btn-next').style.display = 'none';
+  document.getElementById('progress-text').style.display = 'none';
+  document.querySelector('.progress-bar-wrap').style.display = 'none';
+
+  const fc = document.getElementById('finish-card');
+  fc.style.display = 'block';
+  document.getElementById('final-correct').textContent = correctCount;
+  document.getElementById('final-total').textContent = TOTAL;
+  document.querySelector('.score-bar').style.display = 'none';
+}
+
+function startDrill() {
+  currentQ = 0;
+  correctCount = 0;
+  questions = generateQuestions(TOTAL);
+
+  document.getElementById('correct-count').textContent = 0;
+  document.getElementById('total-count').textContent = 0;
+  document.getElementById('finish-card').style.display = 'none';
+  document.getElementById('question-card').style.display = 'block';
+  document.getElementById('btn-check').style.display = 'block';
+  document.getElementById('btn-next').style.display = 'none';
+  document.getElementById('progress-text').style.display = 'block';
+  document.querySelector('.progress-bar-wrap').style.display = 'block';
+  document.querySelector('.score-bar').style.display = 'flex';
+
+  updateProgress();
+  renderQuestion(questions[0]);
+}
+
+startDrill();
+</script>
+</body>
+</html>
