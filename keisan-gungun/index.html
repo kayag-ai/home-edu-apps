@@ -215,6 +215,25 @@
     }
     .btn-secondary:hover { border-color: #bbb; color: #666; }
 
+    .btn-copy {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 10px;
+      padding: 10px 24px;
+      font-size: 0.9rem;
+      font-family: 'Kosugi Maru', sans-serif;
+      color: var(--green-dark);
+      background: none;
+      border: 2px solid var(--green);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .btn-copy:active { background: var(--green); color: white; }
+    .btn-copy.copied { background: var(--green); color: white; border-color: var(--green); }
+
     /* ========== ゲーム画面 ========== */
     #game-screen {
       display: none;
@@ -385,6 +404,7 @@
     </div>
     <div class="result-comment" id="ov-comment" style="display:none"></div>
     <button class="btn-primary" id="start-btn">スタート！</button>
+    <button class="btn-copy" id="copy-btn" style="display:none">📋 きろくをコピー</button>
     <button class="btn-secondary" id="back-btn">セットをえらびなおす</button>
   </div>
 </div>
@@ -433,6 +453,7 @@ const ovComment       = document.getElementById('ov-comment');
 const statTime        = document.getElementById('stat-time');
 const statAcc         = document.getElementById('stat-acc');
 const debugBtn        = document.getElementById('debug-btn');
+const copyBtn         = document.getElementById('copy-btn');
 
 // ============================================================
 //  セット選択画面を構築
@@ -485,6 +506,7 @@ backBtn.addEventListener('click', () => {
   clearInterval(timerInterval);
   gameScreen.classList.remove('active');
   setSelectScreen.style.display = 'flex';
+  copyBtn.style.display = 'none';
 });
 
 function initGame() {
@@ -634,8 +656,29 @@ function finishGame() {
   ovComment.textContent = comment;
   ovComment.style.display = 'block';
   startBtn.textContent = 'もういっかい！';
+
+  // コピーボタン準備
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
+  const copyText = `${dateStr} ${currentSet.name} ${char}${rank} ${totalSec}s ${accuracy}%`;
+  copyBtn.dataset.text = copyText;
+  copyBtn.textContent = '📋 きろくをコピー';
+  copyBtn.classList.remove('copied');
+  copyBtn.style.display = 'flex';
+
   overlay.classList.remove('hidden');
 }
+
+// コピーボタン処理
+copyBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(copyBtn.dataset.text).then(() => {
+    copyBtn.textContent = '✅ コピーしたよ！';
+    copyBtn.classList.add('copied');
+  }).catch(() => {
+    // clipboard API非対応フォールバック
+    copyBtn.textContent = copyBtn.dataset.text;
+  });
+});
 
 // ============================================================
 //  デバッグ
