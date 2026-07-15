@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>いま なんじ？</title>
+<style>
+  :root{
+    --paper:#FFF8EE;
+    --ink:#2B3A55;
+    --coral:#FF8C61;
+    --yellow:#FFD166;
+    --dusk:#6C5B7B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Maru Gothic ProN","BIZ UDGothic","Yu Gothic",sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    padding:16px;
+    padding-bottom:48px;
+    transition:background 0.6s ease;
+  }
+  h1{
+    text-align:center;
+    font-size:22px;
+    margin:4px 0 16px;
+    letter-spacing:0.05em;
+  }
+  ruby rt{font-size:0.55em;}
+
+  /* --- 空エリア --- */
+  #sky{
+    border-radius:24px;
+    padding:20px 16px 28px;
+    transition:background 0.6s ease;
+    box-shadow:0 6px 0 rgba(43,58,85,0.08);
+  }
+
+  /* --- 時計 --- */
+  #clockWrap{
+    display:flex;
+    justify-content:center;
+    margin-bottom:8px;
+  }
+  #clockFace{
+    position:relative;
+    width:172px;
+    height:172px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.85);
+    border:5px solid var(--ink);
+    box-shadow:inset 0 0 0 3px rgba(255,255,255,0.6);
+  }
+  .num{
+    position:absolute;
+    width:24px;height:24px;
+    text-align:center;
+    font-weight:700;
+    font-size:15px;
+    transform:translate(-50%,-50%);
+  }
+  .hand{
+    position:absolute;
+    left:50%;top:50%;
+    transform-origin:50% 100%;
+    border-radius:4px;
+    background:var(--ink);
+  }
+  #hourHand{width:6px;height:44px;margin-left:-3px;margin-top:-44px;}
+  #minHand{width:4px;height:62px;margin-left:-2px;margin-top:-62px;background:var(--coral);}
+  #centerDot{
+    position:absolute;left:50%;top:50%;
+    width:12px;height:12px;
+    background:var(--coral);
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+  }
+
+  #digital{
+    text-align:center;
+    font-size:34px;
+    font-weight:800;
+    margin:10px 0 2px;
+    color:#fff;
+    text-shadow:0 2px 4px rgba(0,0,0,0.25);
+  }
+  #ampmLabel{
+    text-align:center;
+    font-size:16px;
+    color:#fff;
+    margin-bottom:14px;
+    text-shadow:0 1px 3px rgba(0,0,0,0.25);
+  }
+
+  /* --- スライダー --- */
+  #sliderRow{margin:0 4px 6px;}
+  input[type=range]{
+    -webkit-appearance:none;
+    width:100%;
+    height:14px;
+    border-radius:8px;
+    background:linear-gradient(90deg,
+      #1a1a40 0%, #1a1a40 8%,
+      #5b7fb5 18%, #ffd27a 26%,
+      #aee3ff 40%, #aee3ff 65%,
+      #ff9a5a 78%, #4b3f72 90%, #1a1a40 100%);
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:34px;height:34px;
+    border-radius:50%;
+    background:#fff;
+    border:4px solid var(--coral);
+    cursor:pointer;
+    box-shadow:0 2px 6px rgba(0,0,0,0.3);
+  }
+  #sliderLabels{
+    display:flex;justify-content:space-between;
+    font-size:18px;margin-top:2px;color:#fff;
+    text-shadow:0 1px 3px rgba(0,0,0,0.3);
+  }
+
+  /* --- カード群 --- */
+  .cardRow{
+    display:flex;
+    gap:10px;
+    margin-top:16px;
+  }
+  .card{
+    flex:1;
+    background:rgba(255,255,255,0.92);
+    border-radius:16px;
+    padding:12px 8px;
+    text-align:center;
+    box-shadow:0 3px 0 rgba(43,58,85,0.1);
+  }
+  .card .label{font-size:12px;color:#7a7a7a;margin-bottom:4px;}
+  .card .value{font-size:17px;font-weight:800;}
+
+  #eventBox{
+    margin-top:14px;
+    background:rgba(255,255,255,0.92);
+    border-radius:16px;
+    padding:14px;
+    text-align:center;
+    font-size:16px;
+    font-weight:700;
+  }
+  #eventBox .icon{font-size:30px;display:block;margin-bottom:4px;}
+
+  /* --- 同じ時間ちがう名前 --- */
+  section{margin-top:26px;}
+  h2{
+    font-size:16px;
+    border-left:6px solid var(--coral);
+    padding-left:8px;
+    margin-bottom:10px;
+  }
+  #sameTimeBox{
+    background:#fff;
+    border:2px dashed var(--dusk);
+    border-radius:16px;
+    padding:14px;
+    font-size:14px;
+    line-height:1.9;
+  }
+  #sameTimeBox .big{
+    text-align:center;
+    font-size:15px;
+    font-weight:800;
+    margin-top:10px;
+    color:var(--dusk);
+  }
+
+  /* --- クイズ --- */
+  #quizBox{
+    background:#fff;
+    border-radius:16px;
+    padding:16px;
+    box-shadow:0 3px 0 rgba(43,58,85,0.08);
+  }
+  #quizQ{font-size:16px;font-weight:700;margin-bottom:12px;text-align:center;}
+  #quizChoices{
+    display:flex;
+    gap:10px;
+  }
+  .choiceBtn{
+    flex:1;
+    padding:14px 6px;
+    font-size:16px;
+    font-weight:700;
+    border:none;
+    border-radius:12px;
+    background:var(--yellow);
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .choiceBtn:active{transform:translateY(1px);}
+  #quizFeedback{
+    margin-top:12px;
+    text-align:center;
+    font-size:14px;
+    min-height:20px;
+    font-weight:700;
+  }
+  #nextQuizBtn{
+    display:block;
+    margin:12px auto 0;
+    padding:8px 18px;
+    border-radius:20px;
+    border:none;
+    background:var(--dusk);
+    color:#fff;
+    font-weight:700;
+  }
+</style>
+</head>
+<body>
+
+<h1>🕐 いま なんじ？</h1>
+
+<div id="sky">
+  <div id="clockWrap">
+    <div id="clockFace">
+      <div id="hourHand" class="hand"></div>
+      <div id="minHand" class="hand"></div>
+      <div id="centerDot"></div>
+    </div>
+  </div>
+  <div id="digital">--:--</div>
+  <div id="ampmLabel">-</div>
+
+  <div id="sliderRow">
+    <input type="range" id="timeSlider" min="0" max="1439" value="450" step="10">
+    <div id="sliderLabels"><span>🌙0</span><span>🌅6</span><span>☀️12</span><span>🌇18</span><span>🌙24</span></div>
+  </div>
+
+  <div class="cardRow">
+    <div class="card"><div class="label"><ruby>午前<rt>ごぜん</rt></ruby>・<ruby>午後<rt>ごご</rt></ruby></div><div class="value" id="ampmCard">-</div></div>
+    <div class="card"><div class="label"><ruby>時間帯<rt>じかんたい</rt></ruby></div><div class="value" id="bandCard">-</div></div>
+  </div>
+
+  <div id="eventBox">
+    <span class="icon" id="eventIcon">🙂</span>
+    <span id="eventText">-</span>
+  </div>
+</div>
+
+<section>
+  <h2><ruby>同<rt>おな</rt></ruby>じ<ruby>時間<rt>じかん</rt></ruby>、ちがう<ruby>名前<rt>なまえ</rt></ruby></h2>
+  <div id="sameTimeBox">
+    <div><ruby>時計<rt>とけい</rt></ruby>の<ruby>数字<rt>すうじ</rt></ruby>では　<b id="st1">-</b></div>
+    <div><ruby>午前<rt>ごぜん</rt></ruby>・<ruby>午後<rt>ごご</rt></ruby>でいうと　<b id="st2">-</b></div>
+    <div><ruby>一日<rt>いちにち</rt></ruby>の<ruby>感<rt>かん</rt></ruby>じでいうと　<b id="st3">-</b></div>
+    <div><ruby>生活<rt>せいかつ</rt></ruby>では　<b id="st4">-</b></div>
+    <div class="big">ぜんぶ、おなじ<ruby>時間<rt>じかん</rt></ruby>のことだよ！</div>
+  </div>
+</section>
+
+<section>
+  <h2>クイズ：<ruby>午前<rt>ごぜん</rt></ruby>？<ruby>午後<rt>ごご</rt></ruby>？</h2>
+  <div id="quizBox">
+    <div id="quizQ">-</div>
+    <div id="quizChoices"></div>
+    <div id="quizFeedback"></div>
+    <button id="nextQuizBtn">つぎの もんだい</button>
+  </div>
+</section>
+
+<script>
+/* ---------- ふりがな自動変換 ---------- */
+const furiganaMap = {
+  "時間帯":"じかんたい",
+  "午前":"ごぜん",
+  "午後":"ごご",
+  "時間":"じかん",
+  "お昼":"おひる",
+  "夕方":"ゆうがた",
+  "深夜":"しんや",
+  "朝":"あさ",
+  "昼":"ひる",
+  "夜":"よる",
+  "前":"まえ",
+  "時":"じ",
+  "分":"ふん"
+};
+const furiganaKeys = Object.keys(furiganaMap).sort((a,b)=>b.length-a.length);
+const furiganaRegex = new RegExp(furiganaKeys.map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'g');
+function furigana(str){
+  return str.replace(furiganaRegex, m => `<ruby>${m}<rt>${furiganaMap[m]}</rt></ruby>`);
+}
+
+/* ---------- 生活イベント（わたしの一日 初期値） ---------- */
+const events = [
+  {min: 0*60,   text:"ねている",       icon:"😴"},
+  {min: 7*60,   text:"おきる",         icon:"⏰"},
+  {min: 7*60+30,text:"あさごはん",     icon:"🍚"},
+  {min: 8*60,   text:"がっこうへ いく",icon:"🎒"},
+  {min: 12*60,  text:"きゅうしょく",   icon:"🍱"},
+  {min: 15*60+30,text:"がっこうから かえる",icon:"🏠"},
+  {min: 18*60+30,text:"ゆうごはん",     icon:"🍛"},
+  {min: 20*60,  text:"おふろ",         icon:"🛁"},
+  {min: 21*60,  text:"ねる",           icon:"🌙"}
+];
+function currentEvent(mins){
+  let cur = events[events.length-1];
+  for(const e of events){ if(e.min<=mins) cur=e; }
+  return cur;
+}
+
+/* ---------- 曖昧な時間帯（重なりあり） ---------- */
+function band(hour, minute){
+  const t = hour + minute/60;
+  if(t>=18 && t<19) return "夕方〜夜ごろ";
+  if(t>=0 && t<5) return "深夜ごろ";
+  if(t>=5 && t<10) return "朝ごろ";
+  if(t>=10 && t<15) return "昼ごろ";
+  if(t>=15 && t<19) return "夕方ごろ";
+  return "夜ごろ";
+}
+
+/* ---------- 空の色 ---------- */
+function skyColor(hour, minute){
+  const t = hour + minute/60;
+  const stops = [
+    [0,  "#141433"], [4, "#1c2450"], [5.5,"#e08a5b"], [7,"#ffd9a0"],
+    [10, "#8fd3ff"], [15,"#8fd3ff"], [17,"#ff9a5a"], [18.5,"#c15c5c"],
+    [20, "#3b2d5b"], [22,"#181838"], [24,"#141433"]
+  ];
+  for(let i=0;i<stops.length-1;i++){
+    const [t0,c0]=stops[i], [t1,c1]=stops[i+1];
+    if(t>=t0 && t<=t1){
+      return c0; // シンプルに区間色（グラデ補間は行わずCSS transitionに任せる）
+    }
+  }
+  return "#141433";
+}
+
+/* ---------- 表示更新 ---------- */
+const slider = document.getElementById('timeSlider');
+const skyEl = document.getElementById('sky');
+
+function update(){
+  const mins = parseInt(slider.value,10);
+  const hour = Math.floor(mins/60);
+  const minute = mins%60;
+  const isPM = hour>=12;
+  const hour12 = hour%12===0 ? 12 : hour%12;
+
+  // 空の色（bodyとskyの両方に反映してなじませる）
+  const c = skyColor(hour,minute);
+  skyEl.style.background = c;
+  document.body.style.background = c;
+
+  // 時計の針
+  const hourDeg = (hour%12 + minute/60) * 30;
+  const minDeg = minute * 6;
+  document.getElementById('hourHand').style.transform = `rotate(${hourDeg}deg)`;
+  document.getElementById('minHand').style.transform = `rotate(${minDeg}deg)`;
+
+  // デジタル・午前午後
+  const mm = String(minute).padStart(2,'0');
+  document.getElementById('digital').textContent = `${String(hour).padStart(2,'0')}:${mm}`;
+  document.getElementById('ampmLabel').innerHTML = furigana(`${isPM?"午後":"午前"} ${hour12}時${minute? mm+"分":""}`);
+  document.getElementById('ampmCard').innerHTML = furigana(isPM?"午後":"午前");
+
+  // 時間帯
+  const b = band(hour,minute);
+  document.getElementById('bandCard').innerHTML = furigana(b);
+
+  // 生活イベント
+  const ev = currentEvent(mins);
+  document.getElementById('eventIcon').textContent = ev.icon;
+  document.getElementById('eventText').textContent = `いまごろは「${ev.text}」の じかんかな？`;
+
+  // 同じ時間ちがう名前
+  document.getElementById('st1').innerHTML = furigana(`${hour}時${minute}分`);
+  document.getElementById('st2').innerHTML = furigana(`${isPM?"午後":"午前"}${hour12}時${minute?mm+"分":""}`);
+  document.getElementById('st3').innerHTML = furigana(b);
+  document.getElementById('st4').textContent = ev.text + "の ころ";
+}
+slider.addEventListener('input', update);
+
+/* ---------- 時計の文字盤の数字を配置 ---------- */
+const face = document.getElementById('clockFace');
+for(let n=1;n<=12;n++){
+  const ang = (n/12)*2*Math.PI - Math.PI/2;
+  const r = 72;
+  const x = 86 + r*Math.cos(ang);
+  const y = 86 + r*Math.sin(ang);
+  const d = document.createElement('div');
+  d.className='num';
+  d.style.left=x+'px';
+  d.style.top=y+'px';
+  d.textContent=n;
+  face.appendChild(d);
+}
+
+/* ---------- クイズA：午前？午後？ ---------- */
+const quizTimes = [
+  {h:7,label:"あさの 7じ"},
+  {h:10,label:"あさの 10じ"},
+  {h:13,label:"ひるの 1じ（13じ）"},
+  {h:16,label:"ゆうがたの 4じ（16じ）"},
+  {h:21,label:"よるの 9じ（21じ）"},
+  {h:0,label:"よなかの 0じ"}
+];
+let qIndex = 0;
+function loadQuiz(){
+  const q = quizTimes[qIndex % quizTimes.length];
+  document.getElementById('quizQ').innerHTML = furigana(`「${q.label}です」 午前？ 午後？`);
+  const box = document.getElementById('quizChoices');
+  box.innerHTML='';
+  ['午前','午後'].forEach(choice=>{
+    const btn=document.createElement('button');
+    btn.className='choiceBtn';
+    btn.innerHTML=furigana(choice);
+    btn.onclick=()=>checkAnswer(choice,q.h);
+    box.appendChild(btn);
+  });
+  document.getElementById('quizFeedback').textContent='';
+}
+function checkAnswer(choice,h){
+  const correct = h<12 ? '午前':'午後';
+  const fb = document.getElementById('quizFeedback');
+  if(choice===correct){
+    fb.innerHTML = furigana(`そう！ ${h}じは、お昼の12じより${h<12?"前":"あと"}だから ${correct} だよ`);
+    fb.style.color = '#2E8B57';
+  }else{
+    fb.innerHTML = furigana('もういちど、12じより 前か あとか みてみよう');
+    fb.style.color = '#C1440E';
+  }
+}
+document.getElementById('nextQuizBtn').onclick = ()=>{ qIndex++; loadQuiz(); };
+
+loadQuiz();
+update();
+</script>
+</body>
+</html>
